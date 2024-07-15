@@ -1,0 +1,46 @@
+---
+title: "Exercise_1"
+author: "Hamed Abdollahi"
+date: "2024-07-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scripting Commands in R
+
+**Objective:** We will practice scripting commands in R, including file creation, editing, sourcing scripts, and using `sink()` to capture and redirect output.
+
+**Problem Statement:**
+
+Perform the following tasks in R:
+
+1.  **Create a script file named `command_example.R`**.
+
+2.  **Edit the script file using `file.edit()` to add the following content:**
+
+    Copy & paste code from [here](commands/HowTo/Script.R).
+
+3.  **Execute the script file `command_example.R` and print the results.**
+
+4.  **Redirect the output of the script to a text file named `result_command_example.txt`.**
+
+5.  **Stop redirecting output.**
+
+**Hints:**
+
+-   Use `file.create()` to create the script file.
+
+-   Use `file.edit()` to modify the script file with the provided content.
+
+-   Use `source("")` to execute the script and display its output in the console.
+
+-   Use `sink("file_name.txt")` to redirect R output to a text file.
+
+-   Use `sink()` without arguments to stop redirecting output.
+
+**Challenge Question:** How would you modify the script to handle errors or warnings that might occur during script execution? What methods can you use to capture and handle such messages effectively?
+
+This exercise will help students practice fundamental scripting tasks in R, including file handling, sourcing scripts, and managing script output using `sink()`, preparing them for more complex data processing and automation tasks in R.

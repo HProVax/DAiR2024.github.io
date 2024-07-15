@@ -1,0 +1,107 @@
+---
+title: "Script_3"
+author: "Hamed Abdollahi"
+date: "2024-07-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+x <- c("Apple", "Strawberry", "Cherry")
+
+for (fruit in x)
+  print(paste("I like", fruit))# without curly braces if the for loop is a single statement.
+```
+
+```{r}
+for (i in LETTERS[1:10]) {
+  print(i)
+}
+```
+
+```{r}
+x <- LETTERS[1:10]#Vector Definition
+for(i in 5:9) {#For Loop
+       ## Indexing 'x'
+       print(x[i])  
+}
+```
+
+The `seq_along()` function is quite useful in R for iterating over elements of an object.
+
+It is use to generate a sequence of integers that correspond to the indices of an object.
+So it is based on the length of the object.
+
+```{r}
+x <- c("A", "B", "C", "D", "E")
+
+for (i in seq_along(x)) {
+  print(paste("Index", i, ":", x[i]))
+}
+```
+
+Usage in genomics
+
+```{r}
+# Load the iris dataset (if not already loaded)
+data(iris)
+str(iris)
+library(dplyr)
+glimpse(iris)
+colnames(iris)
+dim(iris)
+# Create an empty vector to store means
+mean_iris <- NULL
+# Loop through columns of the dataset
+for(i in seq_along(iris[,1])) {
+  mean_iris <- c(mean_iris,mean(as.numeric(iris[i, 1:3])))
+}
+# Print the first 8 elements of myve
+print(mean_iris[1:8])
+```
+
+Question:
+
+1.  What is the differences between `str()` and `glimpse()`?
+
+2.  And what is another function similar to them?
+
+## Nested `for` loops
+
+```{r}
+n <- 5  # Define the size of the multiplication table (5x5)
+
+# Outer loop for rows 
+for (i in 1:n) {#iterates over each row index (i) from 1 to n.
+  # Inner loop for columns
+  for (j in 1:n) {#Inside the outer loop, iterates over each column index (j) from 1 to n.
+    # Calculate product and print in a formatted way
+    cat(sprintf("%2d ", i * j))
+  }
+  cat("\n")  # Move to the next line after each row
+
+}
+```
+
+```{r}
+# Example: Nested for loops to create a multiplication table and save as a matrix
+n <- 5  # Define the size of the multiplication table (5x5)
+
+# Initialize an empty matrix to store results
+result_matrix <- matrix(0, nrow = n, ncol = n)
+
+# Nested loops to calculate and store results
+for (i in 1:n) {
+  for (j in 1:n) {
+    # Calculate product and store in matrix
+    result_matrix[i, j] <- i * j
+  }
+}
+```
+
+What is the primary difference between the two nested for loop examples.

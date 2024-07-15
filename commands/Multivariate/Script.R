@@ -1,0 +1,10 @@
+#Multivariate normal data can be generated from mvrnorm in MASS package
+library(MASS)
+mySigma = matrix(c(1, -0.7, -0.5, -0.7, 1, 0.6, -0.5, 0.6, 1), nrow=3)
+myMean = c(-1, 0, 1)
+myData = mvrnorm(n=1000, myMean, mySigma)
+colnames(myData) = c("Var1", "Var2", "Var3")
+hist(myData[,"Var1"])
+hist(myData[,"Var2"])
+hist(myData[,"Var3"])
+pairs(myData)

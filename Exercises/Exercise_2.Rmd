@@ -1,0 +1,52 @@
+---
+title: "Exercise_2"
+author: "Hamed Abdollahi"
+date: "2024-07-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Package Installation and Troubleshooting
+
+**Objective:** You will practice installing R packages from CRAN using different methods and troubleshooting installation issues.
+
+### Main Task
+
+Install all the packages listed in the "Datasets" page of "DAiR_2024" under the "Import Data" section on the website.
+
+Load the installed packages into your R session.
+
+Verify the installation and loading of these packages by printing their version numbers.
+
+**Problem Statement:**
+
+Download and install the latest available versions of the `caret` package and `tidymodels` from CRAN. Perform the following tasks:
+
+1.  **Attempt to install the packages through the command line using R.**
+
+2.  **Identify any issues encountered during installation.**
+
+3.  **Check dependencies of the packages using the `pkgnet` library.**
+
+4.  **Analyze if there is any relationship between installation errors and the results from step 3.**
+
+5.  **If any issues arise, use the RStudio Console to install packages, specifying the `install.packages` arguments explicitly.**
+
+6.  **Finally, attempt to install the packages using the Install tab in the Packages section of the Environment Pane in RStudio.**
+
+**Hints:**
+
+-   Use the `install.packages()` function in R to install packages from CRAN.
+
+-   Monitor the R console for any error messages during installation attempts.
+
+-   Adjust installation parameters such as `dependencies`, `repos`, or `type` as needed to troubleshoot installation issues.
+
+-   The CRAN repository URL is "[https://cran.r-project.org"](https://cran.r-project.org%22).
+
+-   You can specify `type = "source"` if needed.
+
+**Challenge Question:** What steps would you take if the installation fails due to dependency issues? How can you resolve these issues effectively?

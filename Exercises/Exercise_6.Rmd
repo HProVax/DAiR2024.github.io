@@ -1,0 +1,29 @@
+---
+title: "Exercise_5"
+author: "Hamed Abdollahi"
+date: "2024-07-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Calculating Correlation Between Flipper Length and Body Mass
+
+**Objective:**
+We will calculate correlations between Flipper Length and Body Mass using Pearson, Kendall, and Spearman methods in R.
+
+**Tasks:**
+
+1.  **Load the dataset.**
+
+2.  **Calculate the correlation between Flipper Length (`flipper_length_mm`) and Body Mass (`body_mass_g`) using Pearson, Kendall, and Spearman methods.**
+
+3.  **Print and display the correlation coefficients for each method.**
+
+**Hints:**
+
+-   Use `cor()` function in R with the `method` argument set to `"pearson"`, `"kendall"`, and `"spearman"` for calculating correlations.
+
+-   Subset or filter the dataset to include relevant columns (`flipper_length_mm` and `body_mass_g`).

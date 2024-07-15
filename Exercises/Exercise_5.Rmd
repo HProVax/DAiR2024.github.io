@@ -1,0 +1,34 @@
+---
+title: "Exercise_5"
+author: "Hamed Abdollahi"
+date: "2024-07-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analyzing Body Mass Data of Gentoo Penguins
+
+**Objective:** We will analyze body mass data of Gentoo penguins using R, perform normality tests, compare body masses between males and females, interpret the results, and visualize the data.
+
+**Tasks:**
+
+1.  **Load the dataset and filter it to include only Gentoo penguins (`species == "Gentoo"`).**
+
+2.  **Perform a Shapiro-Wilk test (`shapiro.test()`) to check the normality of body mass (`body_mass_g`) for Gentoo penguins.**
+
+3.  **Separately, perform Shapiro-Wilk tests for body mass (`bill_length_mm`) of male and female Gentoo penguins.**
+
+4.  **Interpret the results of the normality tests.**
+
+5.  **Visualize body mass distributions for Gentoo penguins, showing comparisons between males and females using appropriate plots.**
+
+**Hints:**
+
+-   Use `shapiro.test()` for normality tests.
+
+-   Use subsetting or filtering (`subset()` or `dplyr::filter()`) to select Gentoo penguins.
+
+-   Use `ggplot2` or base R plots for visualization.

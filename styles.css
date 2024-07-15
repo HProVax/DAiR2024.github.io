@@ -1,0 +1,11 @@
+/* Change the font size of body text */
+
+#TOC {
+  font-size: 3em;
+}
+ul li {
+    font-family: "Times New Roman", monospace; /* Subsection under subsection font */
+    font-size: 18px; /* Example font size */
+    font-weight: normal; /* Example font weight */
+}
+

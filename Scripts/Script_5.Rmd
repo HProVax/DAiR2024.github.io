@@ -1,0 +1,786 @@
+---
+title: "Statistics"
+output:
+  word_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+The dataset palmerpenguins::penguins includes multiple size measurement variables that exhibit correlations.
+
+```{r}
+library(palmerpenguins)
+library(ivo.table)
+data<-penguins
+dim(data)
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+glimpse(data)
+class(data)
+typeof(data)
+sum(is.na(data))
+which(is.na(data))
+library(ggplot2)
+ggplot(data=penguins) +
+  geom_histogram(aes(x=body_mass_g, fill=species))
+```
+
+```{r}
+data[1,]
+```
+
+```{r}
+data |> count(species)|>ivo_table()
+```
+
+```{r}
+apply(data,2,mean)#this code will causing an error.
+```
+
+```{r}
+which(is.na(data), arr.ind = TRUE)
+```
+
+```{r}
+dim(data)
+library(tidyr)
+df <- drop_na(data)
+dfII<-na.omit(data)
+dim(df)
+dim(dfII)
+```
+
+```{r}
+all(colnames(data)%in%colnames(df))
+all(row_number(data)%in%row_number(df))
+```
+
+```{r}
+# Calculate the mean and standard deviation Gentoo body mass in our data (sometimes base R is more sensible than dplyr)
+mean(df$body_mass_g, na.rm=TRUE)
+sd(df$body_mass_g, na.rm=TRUE)
+```
+
+```{r}
+numeric_columns <- sapply(df, is.numeric)
+numeric_columns
+is.vector(numeric_columns)
+class(numeric_columns)
+typeof(numeric_columns)
+```
+
+```{r}
+apply(df[, numeric_columns], 2, mean, na.rm = TRUE)|> table()
+```
+
+```{r}
+numeric_columns <- sapply(names(df), function(col) is.numeric(df[[col]]) && !grepl("year", col))#to remove column "year", which is numeric but must be excluded from the calculation.
+lapply(df[, numeric_columns], mean)|> as.data.frame()|>ivo_table()
+```
+
+```{r}
+library(flextable)
+summary_result <- df |> 
+  select(3:6) |>   # Select the specified columns
+  summarise_all(list(min = min, max = max,median=median))
+summary_result |> as_flextable()
+```
+
+```{r}
+library(flextable)
+summary_result <- df |> 
+  select(3:6) |>   # Select the specified columns
+  summarise_all(list(min = min, max = max,median=median)) |> as_flextable()|> # Convert the table to a format that can be exported
+save_as_docx(path = "~/Documents/DAiR/DAiR_2024_II/min_max.docx")
+```
+
+# The Standard Deviation
+
+-   Calculating the standard deviation of the sample:
+
+    -   Calculate the sum of squares of deviations from the mean:
+
+    sum of squares =$∑(vector−mean(vector))^2$
+
+-   Divide the sum of squares by n - 1, where n is the number of observations (sample size):
+
+    variance= $\frac {∑(vector−mean(vector))^2} {n−1}$​
+
+-   Take the square root to find the standard deviation:
+
+    standard deviation=$\sqrt\frac {∑(vector−mean(vector))^2} {n−1}​$
+
+```{r}
+
+#Standard Deviation: the expected difference from the mean.
+sd(df$bill_length_mm)
+```
+
+```{r}
+result <- sqrt(sum((df$bill_length_mm - mean(df$bill_length_mm))^2 / (length(df$bill_length_mm) - 1)))
+print(result)
+```
+
+```{r}
+std = function(x) sqrt(var(x))
+std(df$bill_length_mm)
+```
+
+```{r}
+df %>%
+  summarise(across(where(is.numeric), var, na.rm = TRUE))#the "year" column included in the standard deviation calculation
+```
+
+```{r}
+df$year[1:10]
+unique(df$year)#The distinct() function is because distinct() is designed to work with data frames, not vectors. 
+```
+
+```{r}
+df %>%
+  summarise(across(where(is.numeric) & !all_of("year"), ~ sqrt(var(.x, na.rm = TRUE))))
+```
+
+```{r}
+df$year<-as.Date(df$year)
+df %>%
+  summarise(across(where(is.numeric), var, na.rm = TRUE))
+```
+
+```{r}
+#Standard Error: If you’re putting error bars around means on a graph, use the SE.
+sd(df$bill_length_mm)/sqrt(length(df$bill_length_mm))
+```
+
+```{r}
+df %>%
+  summarise(across(where(is.numeric), ~ sqrt(var(.x, na.rm = TRUE))))
+```
+
+```{r}
+summary(df$bill_length_mm)
+```
+
+```{r}
+quantile(df$bill_length_mm,.5)
+quantile(df$bill_length_mm,c(.25,.75))
+IQR(df$bill_length_mm)#The distance between the first quartile and the third quartile
+```
+
+```{r}
+sort(df$bill_length_mm)[1:10]
+```
+
+A trimmed mean is indeed a robust method of averaging that excludes a specified percentage of extreme values from both ends of a dataset before computing the mean. This approach helps mitigate the influence of outliers and extreme values on the calculated average, making the trimmed mean more robust in the presence of skewed or distorted data distributions.
+
+```{r}
+mean(df$bill_length_mm)
+mean(sort(df$bill_length_mm),trim=1/10) #Trimming (10%) from both ends.
+mean(sort(df$bill_length_mm),trim=0.2) #Trimming (20%) from both ends.
+median(df$bill_length_mm)#As we trim more and more, the value of the mean gets closer to the median.
+```
+
+# The median absolute deviation(MAD):
+
+A robust measure of how spread out a set of data is. The variance and standard deviation are also measures of spread, but they are more affected by extremely high or extremely low values and non normality.
+
+```{r}
+median(abs(df$bill_length_mm - median(df$bill_length_mm)))*1.4826 #The choice of 1.4826 makes the value comparable with the standard deviation for the normal distribution
+```
+
+```{r}
+mad(df$bill_length_mm)#a statistic that gives the average distance of the data points from the median.
+```
+
+```{r}
+summary(df$bill_length_mm)
+```
+
+```{r}
+range(df$bill_length_mm)
+```
+
+```{r}
+bill_length = cut(df$bill_length_mm,breaks=c(32,39.5,44.5,48.6,max(df$bill_length_mm)))
+table(bill_length)
+levels(bill_length)<-c("tiny","small","moderate","large")
+prop.table(table(bill_length))*100
+sum(prop.table(table(bill_length))*100)
+```
+
+## To visualize the distribution of `bill_length_mm:`
+
+```{r}
+freq<-table(bill_length)
+freq
+hist<-hist(df$bill_length_mm, 
+     breaks = c(32.1,39.5,44.5,48.6,max(df$bill_length_mm)),
+     probability=TRUE,
+     col = "skyblue",        # Color of bars
+     border = "black",       # Color of bar borders
+     xlab = "Bill Length (mm)",  # X-axis label
+     ylab = "Frequency",         # Y-axis label
+     main = "Histogram of Bill Lengths",  # Title of the plot
+     xlim = c(30, 60),
+     ylim = c(0,.08)
+)
+hist
+rug(jitter(df$bill_length_mm), side = 1, col = "red")
+text(hist$mids, hist$density + 0.003, labels = hist$counts, col = "black")
+```
+
+By setting `probability=TRUE`, the histogram displays the relative frequencies, making the total area under the histogram equal to 1. This means that the height of each bar represents the relative frequency (or proportion) of data points within each bin, effectively normalizing the histogram. This approach aligns the histogram with the concept of a probability density function, allowing for a better understanding of the distribution in terms of probabilities.
+
+```{r}
+bp<- boxplot(df$bill_length_mm,horizontal=TRUE,main = "Boxplot of Bill Length", xlab = "Bill Length (mm)")
+bp$stats
+# Add annotations using the statistics from bp$stats
+text(bp$stats[1, 1], 1.2, labels = paste("Min:", round(bp$stats[1, 1], 2)), pos = 3, cex = 0.5)
+text(bp$stats[2, 1], 1.2, labels = paste("Q1:", round(bp$stats[2, 1], 2)), pos = 3, cex = 0.5)
+text(bp$stats[3, 1], 1.2, labels = paste("Median:", round(bp$stats[3, 1], 2)), pos = 3, cex = 0.5)
+text(bp$stats[4, 1], 1.2, labels = paste("Q3:", round(bp$stats[4, 1], 2)), pos = 3, cex = 0.5)
+text(bp$stats[5, 1], 1.2, labels = paste("Max:", round(bp$stats[5, 1], 2)), pos = 3, cex = 0.5)
+```
+
+```{r}
+for (col in names(numeric_columns)[numeric_columns]) {
+  bp <- boxplot(df[[col]], horizontal = TRUE, main = paste("Boxplot of", col), xlab = col)
+  stats <- bp$stats
+  
+  # Add annotations using the statistics from bp$stats
+  text(stats[1, 1], 1.2, labels = paste("Min:", round(stats[1, 1], 2)), pos = 3, cex = 0.5)
+  text(stats[2, 1], 1.2, labels = paste("Q1:", round(stats[2, 1], 2)), pos = 3, cex = 0.5)
+  text(stats[3, 1], 1.2, labels = paste("Median:", round(stats[3, 1], 2)), pos = 3, cex = 0.5)
+  text(stats[4, 1], 1.2, labels = paste("Q3:", round(stats[4, 1], 2)), pos = 3, cex = 0.5)
+  text(stats[5, 1], 1.2, labels = paste("Max:", round(stats[5, 1], 2)), pos = 3, cex = 0.5)
+}
+```
+
+```{r}
+male_Ge <- df %>%
+  filter(species == 'Gentoo' & sex == 'male')
+
+female_Ge <- df %>%
+  filter(species == 'Gentoo' & sex == 'female')
+
+male<- male_Ge[,6] #select body mass
+male<- as.numeric(unlist(male)) #eliminate list
+
+female<- female_Ge[,6]
+female<- as.numeric(unlist(female)) #eliminate list
+par(mfrow=c(1,2))
+boxplot(male, main ="male", col ="blue")
+boxplot(female, main = "female", col ="red")
+```
+
+```{r}
+# Convert selected columns to matrix
+mat <- as.matrix(df[, numeric_columns])
+# Compute row-wise proportions
+propR<- prop.table(mat, 1)|>as.data.frame()
+sum(propR$bill_length_mm)
+# Compute column-wise proportions
+propC<- prop.table(mat, 2)|>as.data.frame()
+sum(propC$bill_length_mm)
+```
+
+```{r}
+boxplot(scale(mat))
+```
+
+```{r}
+library(ggplot2)
+# Plotting histograms for all numeric columns
+plot_list <- lapply(names(df)[sapply(df, is.numeric)], function(col) {
+  ggplot(df, aes_string(x = col)) +
+    geom_histogram(binwidth = .75, fill = "blue", color = "black") +
+    labs(title = paste("Distribution of", col), x = col, y = "Frequency") +
+    theme_minimal()
+})
+
+# Arrange plots in a grid using gridExtra package
+library(gridExtra)
+
+grid.arrange(grobs = plot_list, ncol = 2) 
+```
+
+```{r}
+ggplot(df, aes(x = island, y = sex, fill = sex)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Comparison of Bill Depth by Island", x = "Island", y = "Bill Depth (mm)")
+```
+
+```{r}
+ggplot(df, aes(x = bill_length_mm, fill = sex)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density of bill_length_mm by Sex", x = "bill_length(mm)", y = "Density") +
+  scale_fill_manual(values = c("blue", "red"))  
+```
+
+```{r}
+ggplot(df, aes(x = bill_length_mm, fill = species)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density of bill_depth_mm by Sex", x = "bill_depth(mm)", y = "Density") +
+  scale_fill_manual(values = c("blue", "red","green"))  
+```
+
+```{r}
+ggplot(df, aes(x = bill_length_mm, fill = species)) +
+  geom_density(alpha = 0.5) +
+  geom_density(aes(x = bill_depth_mm, fill = species), alpha = 0.5, color = "black", linetype = "dashed") +
+  labs(title = "Density of bill_length_mm and flipper_length_mm by Species", x = "Length (mm)", y = "Density") +
+  scale_fill_manual(values = c("blue", "red", "green"))
+```
+
+```{r}
+ggplot(df, aes(x = body_mass_g, fill = species)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density of Body Mass by Sex", x = "Body Mass (g)", y = "Density") +
+  scale_fill_manual(values = c("blue", "red","green"))  # Optional: customizing fill colors
+```
+
+```{r}
+par(mfrow = c(1, 2)) # 2 graphs per page
+# Create the violin plot
+violin_plot <- ggplot(df, aes(x = species, y = bill_length_mm, fill = species)) +
+  geom_violin() +
+  theme_minimal() +
+  labs(title = "Violin Plot of Bill Length by Species",
+       x = "Species",
+       y = "Bill Length (mm)")
+# Create a density plot of bill length
+density_plot <- ggplot(df, aes(x = bill_length_mm, fill = species, color = species)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  labs(title = "Density Plot of Bill Length by Species",
+       x = "Bill Length (mm)",
+       y = "Density")
+
+# Arrange the plots in a 1x3 grid
+grid.arrange(violin_plot, density_plot, ncol = 2)
+```
+
+```{r}
+unique(df$species)
+gentoo = df %>% 
+  filter(species=="Gentoo") 
+ggplot(data=gentoo) +
+  geom_histogram(aes(x=body_mass_g),fill="green")+
+  labs(title = "Histogram of Body Mass in Gentoo", x = "Body Mass (g)", y = "count") 
+```
+
+```{r}
+# Check normality assumption with a qqplot:
+norm_check<-qqnorm(gentoo$bill_length_mm, pch=10,col="blue")
+norm_check<-qqline(gentoo$bill_length_mm,col="red",lwd=1)
+norm_check
+library("car")
+qqnormplot<- qqPlot(gentoo$bill_length_mm)
+qqnormplot
+library(performance)
+check_normality(gentoo$bill_length_mm,sample.size=length(gentoo$bill_length_mm), main = "Y")
+
+ggplot(gentoo, aes(x = bill_length_mm)) +
+  geom_histogram(binwidth = 1, color = "black", fill = "lightblue") +
+  labs(title = "Histogram of Bill Length (mm)", x = "Bill Length (mm)", y = "Frequency")
+```
+
+The rnorm() function in R generates a vector of random numbers sampled from a normal distribution. It requires three main arguments to define the characteristics of the distribution:`n` ,`mean` ,`sd`
+
+```{r}
+#Example of Noemal distributed data
+results = c();
+mu = 0; sigma = 1
+for(i in 1:500) {
+ X = rnorm(100,mu,sigma) # generate random data
+ results[i] = (mean(X) - mu)/(sigma/sqrt(100))
+}
+his_X <- hist(results,prob=T,xlim = c(-3,3))
+his_X <- curve(dnorm(x, 0, 1), add = TRUE, col = "blue", lwd = 2)
+his_X
+qqPlot(X)
+check_normality(X,sample.size=100, main = "Y")
+```
+
+The `rnonnorm()` function in R generating a vector of random numbers sampled from a non-normal data with specified skewness and kurtosis using Fleishman's Method.
+
+```{r}
+#Example of Non-Noemal distributed data
+
+library(detectnorm)
+nonnorm <- numeric(0)
+for(i in 1:500) {
+nonnorm<- rnonnorm(n = 100, mean = 0, sd = 1, skew = -1, kurt = 1)$dat}
+summary(nonnorm)
+hist_n<-hist(nonnorm)
+hist_n
+qqPlot(nonnorm)
+check_normality(nonnorm, sample.size=100, main = "Y")
+```
+
+# The homogeneity of variance
+
+```{r}
+#To check the homogeneity of variance across different groups
+leveneTest(bill_length_mm ~ sex, data = df)
+#p-value < 0.05: evidence of the unequal variances for the sample.
+#Df: Degrees of freedom.
+#F value: The test statistic for Levene's test.
+#Pr(>F): The p-value associated with the test statistic.
+```
+
+Since the p-value (0.09378) of `leveneTest` is greater than 0.05, we do not reject the null hypothesis. This suggests that there is no strong evidence against the assumption of homogeneity of variances across `sex` based on Levene's test.
+
+# One Sample Proportion Test
+
+```{r}
+prop_sex<- table(df$sex)
+prop_sex
+prop.test(prop_sex,conf.level = 0.95)
+#X-squared: The test statistic for the chi-squared test.
+#df: Degrees of freedom.
+#Alternative hypothesis: Indicates whether the test is two-tailed.
+#Confidence interval: Provides the 95% confidence interval for the true proportion p.
+#Sample estimates: Provides the estimated proportion p from your sample.
+```
+
+The p-value (0.9127) of `prop.test` is much greater than 0.05, indicating that there is no significant evidence to reject the null hypothesis. Therefore, there is no significant difference between the observed proportions of females and males
+
+# Student's t-test
+
+suitable when comparing means between two groups, under the assumption that the variances in both groups are equal.
+
+```{r}
+t.test(df$body_mass_g,df$flipper_length_mm,conf.level = 0.99,var.equal = TRUE)
+#t: The t-statistic for the test.
+#df: Degrees of freedom.
+#p-value: The probability of observing a test statistic at least as extreme as the one observed, under the null hypothesis that there is no difference between the means of the two groups.
+#Alternative hypothesis: Indicates whether the test is two-tailed (true difference in means is not equal to 0), which is typical for this test.
+#Confidence interval: Provides the 99% confidence interval for the difference in means between the two groups.
+#Sample estimates: Provides the sample means (mean of x for df$body_mass_g and mean of y for df$flipper_length_mm).
+```
+
+The p-value is very small (less than 2.2e-16), indicating strong evidence against the null hypothesis. Therefore, based on this test, there is a significant difference between the mean body mass and mean flipper length in the sample. The confidence interval suggests that we are 99% confident that the true difference in means lies between 3892.085 and 4120.095. This analysis indicates that the body mass and flipper length are significantly different in the sample, based on the two-sample t-test. \# Chi-Squared Test
+
+```{r}
+#Contingency Table
+str(df)
+Sp_IS_tb <- table( Species = df$species, Island = df$island )
+Sp_IS_tb <- addmargins( Sp_IS_tb )
+Sp_IS_tb
+```
+
+```{r}
+chisq.test( Sp_IS_tb )
+#X-squared: The test statistic for the Chi-squared test.
+#df: Degrees of freedom.
+#p-value: The probability of observing a test statistic at #least as extreme as the one observed, under the null #hypothesis that there is no association between the #variables.
+#Null hypothesis: Typically, the null hypothesis is that #there is no association between the variables (independence #or no difference from expected frequencies).
+```
+
+The p-value is very small (less than 2.2e-16), suggesting strong evidence against the null hypothesis. Therefore, based on this test, there is a significant association or difference in frequencies across the categories in Sp_IS_tb. In summary, this Chi-squared test indicates that there is a significant relationship or difference among the species and islands, based on the observed frequencies. If the sample size is small, we have to use Fisher’s Exact Test: \## Fisher's Exact Test It is used to determine if there are nonrandom associations between two categorical variables.
+
+```{r}
+fisher.test(df$island,df$sex)
+```
+
+#Correlation Test
+
+```{r}
+cor(df$bill_length_mm,df$body_mass_g,method = "pearson")
+cor(df$bill_length_mm,df$body_mass_g,method = "kendall")
+cor(df$bill_length_mm,df$body_mass_g,method = "spearman")
+```
+
+Pearson correlation measures linear relationships and is sensitive to outliers. Kendall correlation measures monotonic relationships and is robust against outliers. Spearman correlation also measures monotonic relationships but is based on ranks rather than exact values. gth (df$bill_length_mm) and body mass (df$body_mass_g), with Pearson showing the strongest linear relationship and Kendall and Spearman indicating moderate monotonic relationships.
+
+```{r}
+#scatter plots for bill length vs. bill depth
+ggplot(df, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Bill Length vs. Body Mass", x = "Bill Length (mm)", y = "Body Mass (g)")
+
+```
+
+```{r}
+cor(df[,c(3:6)],method = "pearson")
+cor(df[,c(3:6)],method = "spearman")
+```
+
+```{r}
+#scatter plots for flipper length vs. body mass
+ggplot(df, aes(x = flipper_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Flipper Length vs. Body Mass", x = "Flipper Length (mm)", y = "Body Mass(gr)")
+```
+
+# ANOVA
+
+In situations involving two variables, the setup is straightforward. The response variable is positioned on the left-hand side, while the predictor variable is on the right-hand side:
+
+response ∼ predictor (when two variables)
+
+This notation indicates the relationship where the response variable, typically the dependent variable of interest, is modeled as a function of the predictor variable, which serves as the independent variable.
+
+```{r}
+one_way <- aov(body_mass_g ~ species, data=df)
+summary(one_way) 
+#Df (Degrees of Freedom): This represents the degrees of #freedom associated with the model (species) and the #residuals (error).
+#Sum Sq (Sum of Squares): This is a measure of the variance #explained by the model (species) and the residuals.
+#Mean Sq (Mean Sum of Squares): This is the sum of squares #divided by its degrees of freedom, representing the #variance estimate.
+#F value: This is the test statistic for the ANOVA test, #which compares the variance between groups (due to species) #to the variance within groups (residual variance).
+#Pr(>F): This is the p-value associated with the F #statistic. It indicates the probability of observing an F #value as extreme or more extreme than the one observed, #under the null hypothesis that there is no difference #between group means.
+```
+
+The one-way ANOVA indicates that there is a statistically significant difference in body mass among the different species of penguins. Specifically, the F-statistic of 341.9 with a very low p-value (\<2e-16) suggests that at least one species differs significantly in body mass from the others.
+
+##TukeyHSD To do pairwise comparisons of means among the species based on the results of one-way ANOVA
+
+```{r}
+#Post-hoc tests take into account that multiple tests are done
+TuHSD<- TukeyHSD(one_way)
+TuHSD
+library(multcomp)
+glht_test <- glht(one_way,
+  linfct = mcp(species = "Tukey")
+)
+par(mar = c(3, 8, 3, 3))
+Tu<- plot(TuHSD)
+Tu
+plot(glht_test)
+#Adjusted p-value (p adj): This value adjusts for multiple #comparisons (family-wise error rate) using methods such as #Tukey's HSD to account for the increased risk of Type I #errors (false positives) when performing multiple tests.
+#Confidence Interval (CI): Indicates the range within which #the true difference in means between groups is likely to #fall.
+#Significance: Comparisons with adjusted p-values below your #chosen significance level (e.g., 0.05) suggest significant #differences between groups. In your results, Gentoo #penguins significantly differ in body mass compared to both #Adelie and Chinstrap penguins.
+```
+
+There is a significant difference in body mass between Gentoo and Adelie penguins and Gentoo and Chinstrap penguins but not between Chinstrap and Adelie penguins. #Suppose both sex and species as factors affecting body_mass_g
+
+```{r}
+two_way <- aov(bill_depth_mm ~ sex + species, data=df)
+summary(two_way)
+```
+
+```{r}
+TukeyHSD(two_way, which = "species")
+```
+
+```{r}
+kruskal.test(bill_length_mm ~ species,data = df)
+```
+
+Based on the Kruskal-Wallis test, we reject the null hypothesis, indicating that there is strong evidence to conclude that at least one species differs significantly in terms of flippers length (p-value \< 0.001).For illustration, if the p-value were greater than the significance level α=0.05, we would fail to reject the null hypothesis. This would suggest that we do not have sufficient evidence to conclude that the three considered species of penguins differ in terms of flippers length."
+
+```{r}
+library(FSA)
+dunnTest(bill_length_mm ~ species,data = df,method = "holm")
+```
+
+## More than two variable
+
+When dealing with more than two predictor variables, there are several notations commonly used in this context:
+
+For instance Y, X1 and X2 are variables:
+
+-   Y∼X1: Indicates that Y is modeled by X1.
+
+-   Y∼X1+X2: Indicates that Y is modeled using both X1 and X2, akin to multiple regression.
+
+-   Y∼X1∗X2: Indicates that Y is modeled using X1, X2, and their interaction X1×X2.
+
+-   Y∼(X1+X2)\^2: Represents two-way interactions between X1 and X2. Note that typical mathematical powers apply here.
+
+-   Y∼X1+I((X2\^2): Indicates Y is modeled by X1 and X2\^2, where the I function is used to encapsulate non-standard mathematical expressions.
+
+-   Y∼X1∣X2: Denotes that Y is modeled by X1 conditioned on X2.
+
+#Principal Component Analysis Let’s take a look at the correlation matrix
+
+```{r}
+library(corrr)
+cor_df <- df %>%
+  dplyr::select(body_mass_g, ends_with("_mm")) %>%
+  correlate() %>%
+  rearrange()
+cor_df
+```
+
+Previously we used `cor()` to illustrate th correlation between features. There is a strong correlation observed between body mass and flipper length in the dataset. However, the bill variables do not show similarly strong correlations with other variables in the dataset.
+
+```{r}
+library(dplyr)
+df %>%
+  dplyr::select(species, body_mass_g, ends_with("_mm")) %>% 
+  GGally::ggpairs(aes(color = species),
+          columns = c("flipper_length_mm", "body_mass_g", 
+                      "bill_length_mm", "bill_depth_mm")) +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) +
+  scale_fill_manual(values = c("darkorange","purple","cyan4"))
+```
+
+we will applying some preprocessing steps which make the dataset ready for PCA:
+
+1- Eliminate any missing values (NA values).(done) 2- Center all predictors to have a mean of zero. 3- Scale all predictors to have unit variance.
+
+```{r}
+library(recipes)
+recipe_df <-
+  recipe(~., data = df) %>% 
+  update_role(species, island, sex, year, new_role = "id") %>% 
+  step_naomit(all_predictors()) %>% 
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors(), id = "pca") %>% 
+  prep()
+
+pca_df <- 
+  recipe_df %>% 
+  tidy(id = "pca") 
+
+pca_df
+```
+
+For each component, the value indicates the linear combination of weights assigned to each variable contributing to that component.
+
+```{r}
+prcomp_df <- df %>% 
+  dplyr::select(body_mass_g, ends_with("_mm")) %>% 
+  tidyr::drop_na() %>% 
+  scale() %>% 
+  prcomp() %>%  #Performs a principal components analysis on the given data matrix and returns the results as an object of class prcomp.
+  .$rotation
+prcomp_df
+```
+
+A tidy representation achieved using the above code.
+
+```{r}
+#To examine how much variance each component accounts for:
+recipe_df %>% 
+  tidy(id = "pca", type = "variance") %>% 
+  dplyr::filter(terms == "percent variance") %>% 
+  ggplot(aes(x = component, y = value)) + 
+  geom_col(fill = "#b6dfe2") + 
+  xlim(c(0, 5)) + 
+  ylab("% of total variance")
+```
+
+To plot the loadings by principal component, we can use a bar plot visualization method.
+
+```{r}
+pca_df %>%
+  mutate(terms = tidytext::reorder_within(terms, 
+                                          abs(value), 
+                                          component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  tidytext::scale_y_reordered() +
+  scale_fill_manual(values = c("#b6dfe2", "#0A537D")) +
+  labs(
+    x = "Absolute value of contribution",
+    y = NULL, fill = "Positive?"
+  ) 
+```
+
+To plot the data in a wide format, you can reshape it accordingly.
+
+```{r}
+pca_wider <- pca_df %>% 
+  tidyr::pivot_wider(names_from = component, id_cols = terms)
+```
+
+To extract the PCA scores from PCA calculated data use the `recipes::juice()` function:
+
+```{r}
+# define arrow style
+arrow_style <- arrow(length = unit(.05, "inches"),
+                     type = "closed")
+
+
+pca_plot <-
+  juice(recipe_df) %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_point(aes(color = species, shape = species), 
+             alpha = 0.8, 
+             size = 2) +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) 
+
+pca_plot +
+  geom_segment(data = pca_wider,
+               aes(xend = PC1, yend = PC2), 
+               x = 0, 
+               y = 0, 
+               arrow = arrow_style) + 
+  geom_text(data = pca_wider,
+            aes(x = PC1, y = PC2, label = terms), 
+            hjust = 0, 
+            vjust = 1,
+            size = 5, 
+            color = '#0A537D')
+```
+
+Initially, directing your attention to the x-axis depicting the first principal component, it becomes evident that flipper length and body mass play significant roles (reaffirming observations from the preceding bar chart). Along this dimension, Gentoo penguins distinctly stand out from the other two species.
+
+```{r}
+df %>% 
+  group_by(species) %>% 
+  summarize(across(c(flipper_length_mm, body_mass_g), 
+                   mean, 
+                   na.rm = TRUE)) 
+```
+
+```{r}
+ggplot(df, aes(x = flipper_length_mm, y = body_mass_g, colour = species)) +
+  geom_point() +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) 
+```
+
+```{r}
+pca_plot %+% 
+  aes(PC2, PC3) +
+  geom_segment(data = pca_wider,
+               aes(xend = PC2, yend = PC3), 
+               x = 0, 
+               y = 0, 
+               arrow = arrow_style) + 
+  geom_text(data = pca_wider,
+            aes(x = PC2, y = PC3, label = terms), 
+            hjust = 0, 
+            vjust = 1,
+            size = 5, 
+            color = '#0A537D') 
+```
+
+```{r}
+df %>% 
+  group_by(species) %>% 
+  summarize(across(c(bill_depth_mm, bill_length_mm), 
+                   mean, 
+                   na.rm = TRUE))
+```
+
+```{r}
+ggplot(df, aes(x = bill_length_mm, y = bill_depth_mm, colour = species)) +
+  geom_point() +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) 
+```
+
+```{r}
+library(ggbiplot)
+df.pca <- prcomp (~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+                    data=df,
+                    na.action=na.omit,  # not actually necessary: we removed NA
+                    scale. = TRUE)
+
+df.pca
+ggbiplot(df.pca, obs.scale = 1, var.scale = 1,
+         groups = df$species, 
+         ellipse = TRUE, circle = TRUE) +
+  scale_color_discrete(name = 'Penguin Species') +
+  theme_minimal() +
+  theme(legend.direction = 'horizontal', legend.position = 'top') 
+```

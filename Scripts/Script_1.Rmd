@@ -1,0 +1,242 @@
+---
+title: "Script_1"
+author: "Hamed Abdollahi"
+date: "2024-07-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Welcome to the DAiR Workshop
+
+The simplest task you can perform with R"
+
+```{r}
+getwd()
+?setwd
+```
+
+## Package
+
+To download and install packages from various repositories:
+
+```{r}
+# install.packages("tidyverse")
+# install.packages("BiocManager")
+# BiocManager::install("DESeq2")
+# install.packages("devtools")
+# devtools::install_github("keberwein/mlbgameday")
+```
+
+To display the paths where R looks for installed packages:
+
+```{r}
+# .libPaths()
+```
+
+To display information about the first 10 packages installed in R:
+
+```{r}
+# installed.packages()[1:3]
+# head(installed.packages(), 3)
+```
+
+Displays the search path for loaded namespaces (packages) in your current R session:
+
+```{r}
+search()
+```
+
+```{r}
+library()#To load and attach packages for use in R 
+detach()#To detach (unload) packages
+```
+
+To uninstall (remove) packages from your R system:
+
+```{r}
+#remove.packages()#remove packages from the current library
+#uninstall.packages()#remove packages from the system.
+```
+
+## Assign a value to a variable
+
+We can store values in variables using the assignment operators `<-` and `=`, with `<-` being more prevalent in R coding conventions:
+
+```{r}
+x <- 10
+y <- "Hello, world!"
+z <- c(1, 2, 3)
+x
+y
+z
+```
+
+reassign `z`
+
+```{r}
+z <- log(x)
+z #Check the environment pane and look for `z` value.
+```
+
+-   variable names must follow specific rules:
+
+    -   They cannot start with a number.
+
+    <!-- -->
+
+    -   They cannot contain spaces or special characters except for dot `.` and underscore `_` which is called "snake_case" style.
+    - Certain words are reserved and cannot be used as variable names, such as TRUE, FALSE, NULL, if, else, function, etc. 
+    + "Question for you: What are the reserved words in R?"
+
+    -   R is case-sensitive, meaning `VariableName` and `variablename` would be considered different variables.
+    
+    - You can override the usual rules for variable naming in R by enclosing a name within backticks (`).
+    - You should not use single or double quotes (',").
+    + Question for you: Why should we not use single or double quotes (' or ")?
+    
+```{r}
+# 1var <- 10     #Error: unexpected symbol in "1var"
+#if <- "condition"     #Error: unexpected assignment in "if <-"
+```
+    
+    
+```{r}
+`1var` <- 10
+`if` <- "condition"
+```
+    
+
+We can perform operations such as multiplication and addition:
+
+```{r}
+x*5
+(x+10)/2
+x <- x+1
+x
+```
+
+The order of operations in R:
+
+```{r}
+3 + 5 * 2  # This evaluates to 13 because multiplication is performed before addition
+(3 + 5) * 2  # This evaluates to 16 because the parentheses change the order of operations
+```
+
+R handles nested operations by following the order of operations:
+
+exponents, multiplication, division, addition, and subtraction.
+
+```{r}
+(3 + (5 * (2 ^ 2)))
+3 + 5 * 2 ^ 2   
+3 + 5 * (2 ^ 2) 
+```
+
+Small decimal values
+
+```{r}
+2 / 10000 #scientific notation: 2e-4 is shorthand for 2 * 10^(-4)
+```
+
+## **Mathematical functions**
+
+Use scientific notation for larger numbers
+
+```{r}
+6e8
+```
+
+Trigonometric functions like sine:
+
+```{r}
+sin(1)
+cos(-90)
+```
+
+The natural logarithm (base e):
+
+```{r}
+log(20)
+```
+
+## Relational operators
+
+```{r}
+3 == 5  # Evaluates to FALSE
+
+# Not equal to
+3 != 5  # Evaluates to TRUE
+
+# Greater than
+3 > 5  # Evaluates to FALSE
+
+# Less than or equal to
+3 <= 5  # Evaluates to TRUE
+```
+
+-   It's generally recommended to use `==` for comparing integers:
+
+    ```{r}
+    0.1 + 0.2
+    ```
+
+    refer to [here](https://floating-point-gui.de/) the unexpected result is:
+
+    ```         
+    0.30000000000000004
+    ```
+
+    ```{r}
+
+    # Comparing within a tolerance range
+    x <- 0.1 + 0.2
+    y <- 0.3
+    x == y 
+    tolerance <- 1e-8  # Example tolerance level
+    abs(x - y) < tolerance  # Evaluates to TRUE
+    ```
+
+    Computers can represent decimal numbers with limited precision, so two numbers that appear identical when printed by R may have slightly different underlying representations due to this precision.
+
+## Vector
+
+One important aspect to understand in R is its vectorized nature, where variables and functions can operate on entire vectors of values.
+For example:
+
+```{r}
+x1 <- c(1, 2, 3, 4, 5)  # Creating a numeric vector
+x2 <- 1:5               # A numeric vector containing the values 1, 2, 3, 4, and 5
+x3 <- 2^x1
+y1 <- x * 2              # Multiplying each element of x by 2
+y2 <- 2^(1:5)#element is 2 raised to the power of each element in the sequence from 1 to 5
+z <- sqrt(x)            # Taking the square root of each element of x
+x1
+x2
+x3
+y1
+y2
+z
+```
+
+## **Managing Environment**
+
+To list the names of objects (variables, functions, etc.) that are currently stored in your workspace:
+
+```{r}
+ls()
+ls
+```
+
+To remove objects (variables, functions, etc.) from the workspace:
+
+```{r}
+rm(x2)
+ls()
+rm(list = ls())        #removes all objects from the current workspace
+ls()
+```
+
+## 

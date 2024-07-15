@@ -1,0 +1,280 @@
+---
+title: "Bioinformatics Visualization in R - Part 1"
+date: '2024-07-12'
+---
+Lecture 1: 
+Introduction to Visualization and Basic Plots
+
+Objective: 
+- Introduce basic bioinformatics visualization techniques using R 
+  Histogram, Scatter Plot, Box Plot, Line Plot  
+- Overview of syntax using simulated data 
+- Explore basic plots using nhanes data.
+- Exercise 1
+
+Load necessary libraries
+```{r}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyr)
+```
+
+Generate synthetic data
+```{r}
+# set.seed ensures that the sequence of random numbers generated can be reproduced.
+set.seed(123)
+
+data <- data.frame(
+  Time = 1:50,
+  # rnorm() = random normal is used to generate random numbers from a normal distribution."
+  X = rnorm(50, mean = 5, sd = 2),
+  Y = 2 * rnorm(50, mean = 5, sd = 2) + rnorm(50),
+  # c("A", "B") creates a vector containing the elements "A" and "B"
+  # each = 25 specifies that each element in the vector should be repeated 25 times
+  Group = rep(c("A", "B"), each = 25)
+)
+```
+
+1. Histogram Plot:
+   Histograms are useful to show the distribution of a single continuous variable
+```{r}
+# Create the histogram using ggplot2
+histogram_plot <- ggplot(data, aes(x = X)) +
+                  geom_histogram(binwidth = (max(data$X) - min(data$X)) / 10, 
+                  fill = "purple", color = "white") +
+                  ggtitle("Histogram") +
+                  xlab("Value") +
+                  theme_minimal() +
+                  theme(
+                    plot.background = element_rect(fill = "white"),
+                    panel.background = element_rect(fill = "white")
+                  )
+
+# Display the plot
+histogram_plot
+
+# Save the plot to a file
+ggsave("3_histogram_plot.png", plot = histogram_plot, width = 8, height = 6, dpi = 300)
+```
+
+2. Scatter Plot:
+   Scatter plots are useful to show the relationship between two continuous variables
+```{r}
+# Create the scatter plot with a white background
+Scatter_plot <- ggplot(data, aes(x = X, y = Y)) +
+                geom_point() +
+                ggtitle("Scatter Plot") +
+                xlab("X-axis") +
+                ylab("Y-axis") 
+
+# Display the plot
+Scatter_plot
+
+# Save the plot to a file
+ggsave("1_scatter_plot.png", plot = Scatter_plot, width = 8, height = 6, dpi = 300)
+
+```
+
+3. Box Plot:
+   Box plots are useful to show the distribution of a continuous variable
+```{r}
+# Box Plot
+# Create the box plot
+Box_plot <- ggplot(data, aes(x = Group, y = Y, fill = Group)) +
+            geom_boxplot() +
+            ggtitle("Box Plot") +
+            xlab("Group") +
+            ylab("Value") +
+            scale_fill_manual(values = c("red", "green")) +
+            theme_minimal() +
+            theme(
+              plot.background = element_rect(fill = "white"),
+              panel.background = element_rect(fill = "white")
+            )
+
+# Display the plot
+Box_plot
+
+# Save the plot to a file
+ggsave("2_box_plot.png", plot = Box_plot, width = 8, height = 6, dpi = 300)
+
+```
+
+4. Line Plot:
+   Line plots are useful to show trends over time or another continuous variable
+```{r}
+# Create the line plot using ggplot2
+data$Value <- cumsum(rnorm(50))
+line_plot <- ggplot(data, aes(x = Time, y = Value)) +
+  geom_line(color = "orange", linewidth = 1.5) + # Set line color and thickness
+  ggtitle("Line Plot") +
+  xlab("Time") +
+  ylab("Value") +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white")
+  )
+
+# Display the plot
+print(line_plot)
+
+# Save the plot to a file
+ggsave("4_line_plot.png", plot = line_plot, width = 8, height = 6, dpi = 300)
+```
+
+
+Load a healthcare dataset: nhanes (National Health and Nutrition Examination Survey)
+
+```{r}
+# Actual Dataset Read the data from the provided URL
+NHANES <- read_csv("https://raw.githubusercontent.com/GTPB/PSLS20/master/data/NHANES.csv", show_col_types = FALSE)
+
+# Extract only the columns ID, Age, BMI, and BloodPressure
+nhanes_subset <- NHANES %>%
+  select(ID, Age, BMI, BloodPressure = BPSysAve) %>%
+  distinct(ID, .keep_all = TRUE) %>%
+  drop_na()
+
+# Display the first few rows of the subset
+print(head(nhanes_subset))
+
+# Write the cleaned dataset to a CSV file
+write_csv(nhanes_subset, "health_data.csv")
+
+# Display summary of the cleaned dataset
+print(summary(nhanes_subset))
+```
+
+Visualization 
+
+1. Histogram 
+```{r}
+# Filter out non-finite values from the BMI column
+nhanes_subset <- nhanes_subset %>%
+  filter(is.finite(BMI))
+
+# Create a histogram of BMI with more ticks on the axes
+ggplot(nhanes_subset, aes(x = BMI)) +
+  geom_histogram(binwidth = 2, fill = "red", color = "white") +
+  ggtitle("Histogram of BMI") +
+  xlab("BMI") +
+  ylab("Frequency") +
+  theme_minimal() + # Apply a minimal theme for a clean look
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white")
+  ) +
+  xlim(0, 60) + # Trim the x-axis to show values between 10 and 60
+  ylim(0, 800) +  # Trim the y-axis to show values between 0 and 800
+  scale_x_continuous(breaks = seq(0, 60, by = 10), limits = c(10, 60)) + # More ticks on the x-axis
+  scale_y_continuous(breaks = seq(0, 800, by = 50)) # More ticks on the y-axis
+  
+```
+
+2. Scatter Plot:
+```{r}
+# Create a scatter plot of BMI vs BloodPressure
+# Sample 10% of the data points
+nhanes_sampled_data <- nhanes_subset %>% sample_frac(0.1)
+
+# Create a scatter plot of BMI vs BloodPressure with the sampled data
+ggplot(nhanes_sampled_data, aes(x = BMI, y = BloodPressure)) +
+  geom_point(shape = 19, color = "blue") +
+  ggtitle("Scatter Plot of BMI vs Blood Pressure") +
+  xlab("BMI") +
+  ylab("Blood Pressure") +
+  theme_minimal() + # Apply a minimal theme with a white background
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white")
+  )
+
+```
+
+3. Box Plot:
+```{r}
+# Create a box plot of BloodPressure by Age groups:
+nhanes_sampled_data <- nhanes_sampled_data %>%
+                       mutate(AgeGroup = cut(Age, breaks = c(20, 40, 60, 80), 
+                                             labels = c("20-40", "40-60", "60-80")))
+
+# Create a box plot of BloodPressure by Age groups with colors
+ggplot(nhanes_sampled_data, aes(x = AgeGroup, y = BloodPressure, fill = AgeGroup)) +
+  geom_boxplot() +
+  ggtitle("Box Plot of Blood Pressure by Age Group") +
+  xlab("Age Group") +
+  ylab("Blood Pressure") +
+  scale_fill_manual(values = c("20-40" = "red", "40-60" = "green", "60-80" = "blue")) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white")
+  )
+```
+
+4. Line Plot:
+```{r}
+# For this example, we'll simulate some time series data
+time_series_data <- data.frame(
+  Time = 1:100,
+  Value = cumsum(rnorm(100))
+)
+# Create a line plot of the time series data
+ggplot(time_series_data, aes(x = Time, y = Value)) +
+  geom_line(color = "orange", linewidth = 1.5) +
+  ggtitle("Line Plot of Simulated Time Series Data") +
+  xlab("Time") +
+  ylab("Value") +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "white"),
+    panel.background = element_rect(fill = "white")
+  )
+  
+```
+
+
+
+---------------------------------------Assignment 1: Part 1--------------------------------------------------------
+
+Dr. Kate is investigating an illness affecting a group of individuals. She needs your help to visualize the nhanes data and uncover hidden patterns.
+
+a. Scatter Plot Investigation: 
+   Dr. Kate suspects that age might influence BMI in her patients. 
+   Create a scatter plot using the nhanes dataset to visualize the relationship between Age and BMI. 
+   Identify any patterns or trends that might suggest an age-related trend in BMI.
+   
+```{r}
+# Solution a
+
+
+# Hint: Look for clusters or patterns suggesting that certain age groups are more prone to higher or lower BMI, indicating lifestyle or metabolic factors.
+```   
+
+
+b. Box Plot Analysis: 
+   Dr. Kate wants to determine if certain age groups are at higher risk for elevated blood pressure. 
+   Generate a box plot for BloodPressure by AgeGroup in the nhanes dataset. 
+   Identify any age groups with higher or more variable blood pressure, indicating a health risk.
+   
+```{r}
+# Solution b
+
+
+# Hint: Notice any age group with outliers or higher blood pressure, suggesting that this group is at higher risk of the mysterious illness.
+```   
+
+
+c. Histogram Examination: 
+   Dr. Kate is also interested in the distribution of BMI among her patients. 
+   Create a histogram of BMI. Analyze the distribution of BMI levels and 
+   identify common ranges and any outliers.
+```{r}
+# Solution c
+
+
+# Hint: Identify common BMI ranges and any outliers. Individuals with significantly high or low BMI might be suffering from the mysterious illness, possibly linked to trends observed in blood pressure and age group
+```  
+

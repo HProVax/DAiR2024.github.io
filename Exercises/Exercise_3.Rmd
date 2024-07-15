@@ -1,0 +1,52 @@
+---
+title: "Exercise_3"
+author: "Hamed Abdollahi"
+date: "2024-07-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Retrieving and Processing Data from RCSB PDB API
+
+**Objective:** We will practice retrieving and processing data from the RCSB PDB API using R, focusing on HTTP requests, JSON parsing, and data manipulation.
+
+**Problem Statement:**
+
+Use R to interact with the RCSB PDB API and retrieve data for a specific PDB ID (1UBQ). Perform the following tasks:
+
+1.  **Load the necessary libraries (`httr` and `jsonlite`).**
+
+2.  **Define the base URL for the RCSB PDB API ([`https://data.rcsb.org/rest/v1/core`](https://data.rcsb.org/rest/v1/core)).**
+
+3.  **Set the PDB ID (`pdbid`) to your target.**
+
+4.  **Construct the complete URL for retrieving information about the PDB entry using `paste0()` or `paste()`.**
+
+5.  **Send an HTTP GET request to the constructed URL using `httr::GET()`. Store the request object in `req`.**
+
+6.  **Print the request object (`req`) to inspect the HTTP response details.**
+
+7.  **Extract and parse the content of the response using `httr::content()` with `as = "parsed"` to get structured data. Store it in `data`.**
+
+8.  **Alternatively, extract and parse JSON data directly using `jsonlite::fromJSON()` with `rawToChar(req$content)`. Store it in `json_data`.**
+
+9.  **Convert the parsed data (`data`) into a data frame (`df`) using `as.data.frame()`.**
+
+10. **Print or view the data frame (`df`) to examine the retrieved data.**
+
+11. **Try to retrieve information for** [polymer_entity/4HHB/1](https://data.rcsb.org/rest/v1/core/polymer_entity/4HHB/1) **and save it as a data frame.**
+
+12. **What are the citation title for both PDB IDs?**
+
+**Hints:**
+
+-   Use `httr::GET()` to perform HTTP GET requests.
+
+-   Use `httr::content()` to extract and parse response content.
+
+-   Use `jsonlite::fromJSON()` to parse JSON content directly.
+
+-   Inspect the structure and content of `req`, `data`, `json_data`, and `df` at each step to understand the process.

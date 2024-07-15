@@ -1,0 +1,216 @@
+---
+title: "Bioinformatics Visualization in R - Part 2"
+date: '2024-07-12'
+---
+
+Lecture 2: 
+Introduction to Visualization
+
+Objective: 
+ - Explore advanced visualization techniques and create more complex bioinformatics plots using biological data.
+   Density Plot, Violin Plot, Dendogram, Heatmap
+ - Overview of syntax with simulated data
+ - Explore plots using iris dataset.
+ - Exercise 2
+
+Load necessary libraries
+```{r}
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("GGally")) install.packages("GGally")
+if (!require("pheatmap")) install.packages("pheatmap")
+if (!require("dendextend")) install.packages("dendextend")
+if (!require("ggridges")) install.packages("ggridges")
+
+library(dendextend)
+library(ggplot2)
+library(GGally)
+library(pheatmap)
+library(reshape2)
+library(dplyr)
+```
+
+Generate the Mock Gene Expression Dataset
+```{r}
+# Set random seed for reproducibility
+set.seed(42)
+
+# Number of genes and samples
+num_genes <- 10
+num_samples <- 5
+
+# Generate gene names and sample names
+genes <- paste0("Gene_", 1:num_genes)
+samples <- paste0("Sample_", 1:num_samples)
+
+# Generate random expression levels
+expression_data <- matrix(rnorm(num_genes * num_samples), nrow = num_genes, ncol = num_samples)
+colnames(expression_data) <- samples
+rownames(expression_data) <- genes
+
+# Convert to data frame
+df_expression <- as.data.frame(expression_data)
+
+# Display the first few rows of the dataset
+head(df_expression)
+
+```
+
+Visualization 
+Part 2: Advanced Visualization Techniques
+
+5. Density Plot
+   A density plot shows how the data is spread out, highlighting where values are concentrated.
+```{r }
+df_melted <- melt(df_expression, variable.name = "Sample", value.name = "Expression")
+
+# Create the density plot
+ggplot(df_melted, aes(x = Expression)) +
+  geom_density(fill = "blue", alpha = 0.5) + # transparency
+  labs(title = "Density Plot of Gene Expression Levels",
+       x = "Expression Level",
+       y = "Density") +
+  theme_minimal()
+```
+
+6. Violin Plot:
+   A violin plot is a data visualization that combines a box plot and a kernel density plot to show the distribution, probability density, and variability of data across different categories.
+```{r }
+# Melt the data frame for ggplot2
+df_melted <- melt(df_expression, variable.name = "Sample", value.name = "Expression")
+
+# Create the violin plot with colors
+ggplot(df_melted, aes(x = Sample, y = Expression, fill = Sample)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Violin Plot of Gene Expression Levels",
+       x = "Sample",
+       y = "Expression Level") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+```
+
+
+7. Dendrogram: 
+   A dendrogram is a tree-like diagram that displays the arrangement of clusters formed by hierarchical clustering, 
+   showing the relationships and distances between data points.
+```{r }
+# Generate the hierarchical clustering
+hc <- hclust(dist(df_expression), method = "ward.D2")
+
+# Create the dendrogram
+dend <- as.dendrogram(hc)
+plot(dend, main = "Dendrogram", xlab = "Genes", ylab = "Distance")
+```
+
+
+8. Heatmap + Dendrogram
+   Heatmaps are useful to visualize matrix-like data, such as gene expression data
+```{r }
+# Create the heatmap
+pheatmap(df_expression, scale = "row", main = "Heatmap of Gene Expression")
+```
+
+
+# Load the iris dataset and prepare it for visualization:
+
+```{r }
+# Load the iris dataset
+data("iris")
+
+# Display the first few rows of the dataset
+head(iris)
+summary(iris)
+```
+5. Density Plot
+```{r }
+# Melt the data frame for ggplot2
+df_melted <- melt(iris, id.vars = "Species", variable.name = "Measurement", value.name = "Value")
+
+# Create the density plot with facets for each species
+ggplot(df_melted, aes(x = Value, fill = Measurement)) +
+  geom_density(alpha = 0.5) + # transparency
+  labs(title = "Density Plot of Iris Measurements by Species",
+       x = "Value",
+       y = "Density") +
+  theme_minimal() +
+  facet_wrap(~ Species)
+```
+
+
+6. Density Plot
+```{r }
+# Melt the data frame for ggplot2
+df_melted <- melt(iris, id.vars = "Species", variable.name = "Measurement", value.name = "Value")
+
+# Create the violin plot with colors
+ggplot(df_melted, aes(x = Measurement, y = Value, fill = Species)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Violin Plot of Iris Measurements",
+       x = "Measurement",
+       y = "Value") +
+  theme_minimal() +
+  facet_wrap(~ Measurement, scales = "free")
+```
+
+
+7. Dendogram
+```{r }
+# Remove the Species column for clustering
+iris_no_species <- iris[, -5]
+
+# Compute the correlation matrix
+cor_matrix <- cor(iris_no_species)
+cor_matrix
+
+# Perform hierarchical clustering on the correlation matrix
+hc <- hclust(as.dist(1 - cor_matrix), method = "ward.D2")
+
+# Create the dendrogram
+dend <- as.dendrogram(hc)
+
+# Plot the dendrogram
+plot(dend, main = "Dendrogram of Iris Attributes", xlab = "Attributes", ylab = "Distance")
+```
+
+
+
+```{r}
+
+# Remove the Species column for heatmap plotting
+iris_data <- iris[, -5]
+
+# Create the heatmap with a simplified color scale
+pheatmap(as.matrix(iris_data), 
+         main = "Heatmap of Iris Measurements", 
+         cluster_rows = TRUE, cluster_cols = TRUE, 
+         show_rownames = FALSE,
+         color = colorRampPalette(c("blue", "white", "red"))(50))
+```
+
+
+---------------------------------------Assignment 2: Part 2--------------------------------------------------------
+
+Dr. Smith is studying the famous iris dataset to understand the differences in flower measurements across three species: setosa, versicolor, and virginica. Help Dr. Smith visualize and interpret the data to identify distinguishing features of each species.
+
+a. Density Plot Analysis:
+   Create a density plot to visualize the distribution of sepal length measurements across the three iris species. 
+   Identify which species have similar or distinct sepal length distributions.
+
+```{r }
+# Solution a
+
+
+# Hint: Look for peaks in the density plots to see which species have similar or distinct sepal length distributions.
+```
+
+
+b. Violin Plot Analysis:
+   Use a violin plot to compare the distribution and density of petal widths across the three iris species. 
+   Highlight which species have the widest and narrowest petals.
+
+```{r }
+# Solution b
+
+
+# Hint: Examine the width and shape of the violins to understand the distribution and density of petal widths across species.\
+```
+

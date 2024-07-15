@@ -1,0 +1,49 @@
+---
+title: "Exercise_4"
+author: "Hamed Abdollahi"
+date: "2024-07-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Understanding `apply()` Family Functions and Vector Data Structures
+
+**Objective:**
+We will explore and practice using the `apply()` family of functions in R to operate on vectors and understand different data structures.
+
+**Problem Statement:**
+
+Explore `apply()` family functions and find brief explanation of the differences between `tapply()`, `sapply()`, `lapply()`, and `apply().`
+
+Perform the following tasks:
+
+1.  **Create a numeric vector `x` containing values (`1, 2, 3, 4, 5`).**
+
+2.  **Create a matrix `mat` with dimensions 3x3 containing values from 1 to 9.**
+
+3.  **Using suitable `apply()` family function, calculate the mean of vector `x`.**
+
+4.  **Using `apply()`, calculate the sum of each column in matrix `mat`.**
+
+5.  **Using `lapply()`, convert each element of vector `x` to its squared value.**
+
+6.  **Using `sapply()`, convert each column of matrix `mat` to a vector and calculate the median of each column.**
+
+7.  **Using `vapply()`, verify the type of each element in vector `x` as numeric.**
+
+8.  **Print the results of each operation to verify correctness and understanding.**
+
+**Hints:**
+
+-   Use `apply()` for applying a function over the margins of an array (vector, matrix).
+
+-   Use `lapply()` for applying a function to each element of a list or vector.
+
+-   Use `sapply()` for simplifying the output of `lapply()` to a vector or matrix.
+
+-   Use `vapply()` for verifying and simplifying the output of `lapply()` with a specific type and length.
+
+-   Experiment with different functions (e.g., `mean()`, `sum()`, `median()`) within the `apply()` family to perform operations.
