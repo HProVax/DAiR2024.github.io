@@ -1,0 +1,453 @@
+---
+title: "Bioinformatics Workshop: Working with FASTA Files in R"
+date: '2024-07-12'
+---
+
+Introduction to FASTA Files and Basic Analysis
+Objective:
+- Introduce basic bioinformatics techniques for handling FASTA files using R
+- Downloading, reading, and performing basic analysis on FASTA files
+- Explore sequence extraction, pattern matching, and sequence manipulation
+- Use visualization techniques to understand sequence compositions
+
+
+Load necessary libraries
+``````{r}
+# Install and load necessary libraries
+if (!require("Biostrings")) install.packages("Biostrings")
+if (!require("seqinr")) install.packages("seqinr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("rentrez")) install.packages("rentrez")
+if (!require("tibble")) install.packages("tibble")
+if (!require("tidyr")) install.packages("tidyr")
+if (!require("seqinr")) install.packages("seqinr")
+if (!requireNamespace("IRanges", quietly = TRUE)) {
+  BiocManager::install("IRanges")
+}
+if (!requireNamespace("annotate", quietly = TRUE)) {
+  BiocManager::install("annotate")
+}
+
+library(annotate)
+library(Biostrings)
+library(seqinr)
+library(ggplot2)
+library(dplyr)
+library(rentrez)
+library(tibble)
+library(tidyr)
+library(seqinr)
+library(IRanges)
+```
+
+Download and Read a Sample FASTA File from NCBI
+```{r}
+# Download a FASTA file from NCBI
+ncbi_id <- "NC_012920"  # Example: human mitochondrial DNA
+fasta_data <- entrez_fetch(db="nuccore", id=ncbi_id, rettype="fasta")
+write(fasta_data, file = "sample_NC_012920.fasta")
+
+# Read the FASTA file into R
+fasta_data <- readDNAStringSet("sample_NC_012920.fasta")
+print(fasta_data)
+```
+
+Download a FASTA file with multiple sequences from NCBI and save in same file 
+```{r}
+# Define the NCBI IDs for the sequences you want to retrieve
+ncbi_ids <- c("NM_001200001", "NM_001354762", "NM_001126112")  # Example NCBI IDs, replace with your desired IDs
+# NM_001200001: mRNA sequence of the human beta-globin gene (HBB)
+# NM_001354762: mRNA sequence of the human hemoglobin subunit delta (HBD) gene
+# NM_001126112: mRNA sequence of the human myoglobin gene (MB)
+
+# Fetch the sequence data in FASTA format from the Nucleotide Core database
+multiple_fasta_data <- entrez_fetch(db = "nuccore", id = ncbi_ids, rettype = "fasta")
+
+# Print the retrieved FASTA data
+cat(multiple_fasta_data)
+
+# Save the FASTA data to a file
+fasta_file <- "multiple_sequences.fasta"
+write(multiple_fasta_data, file = fasta_file)
+
+# Confirm the file has been saved
+cat("FASTA file saved as:", fasta_file)
+
+```
+
+Download and Read a Sample FASTA File from other avaibale databases
+```{r}
+# Choose the Swiss-Prot database
+choosebank("swissprot")
+
+# Define the accession number for the hemoglobin sequence
+accession_number <- "P69891"
+
+# Query the Swiss-Prot database for the hemoglobin sequence
+hemo <- query("hemoglo", paste("AC=", accession_number, sep=""))
+
+# Check the structure of the query result
+str(hemo)
+
+# To get the name, length, and other attributes for every available sequence in the query
+attributes(hemo$req)
+
+# To get the sequence of the protein
+seq_hemo <- getSequence(hemo$req[[1]])
+print(seq_hemo)
+
+# To get annotation
+annots <- getAnnot(hemo$req[[1]])
+print(annots)
+
+# Close the database to avoid multiple open banks and for faster data processing
+closebank()
+```
+
+Basic Sequence Analysis
+Count the number of sequences and calculate the length for a FASTA with single sequence 
+```{r}
+# Count the number of sequences
+num_sequences <- length(fasta_data)
+print(paste("Number of sequences:", num_sequences))
+
+# Calculate the length of each sequence
+sequence_lengths <- width(fasta_data)
+print(sequence_lengths)
+```
+
+Count the number of sequences and calculate the length for a FASTA file with multple sequences
+```{r}
+# Split the fetched data into individual sequences using the FASTA header lines as delimiters
+sequences <- strsplit(multiple_fasta_data, split = ">")[[1]]
+sequences <- sequences[sequences != ""]  # Remove empty elements
+
+# Function to extract sequence length
+get_sequence_length <- function(fasta_sequence) {
+  # Split the sequence into lines and remove the first line (header)
+  lines <- unlist(strsplit(fasta_sequence, "\n"))
+  sequence <- paste(lines[-1], collapse = "")
+  return(nchar(sequence))
+}
+
+# Calculate the lengths of the sequences
+sequence_lengths <- sapply(sequences, get_sequence_length)
+
+# Count the number of sequences
+num_sequences <- length(sequence_lengths)
+
+# Print the results
+cat("Number of sequences:", num_sequences, "\n")
+cat("Lengths of sequences:", sequence_lengths, "\n")
+```
+
+Find a Specific Sequence
+Search for a specific sequence within the FASTA data.
+```{r}
+# Search for a specific sequence
+search_sequence <- "ACT"
+matches <- vmatchPattern(search_sequence, fasta_data)
+print(matches)
+
+# Search for a specific sequence
+search_sequence <- "TCGTT"
+matches <- vmatchPattern(search_sequence, multiple_fasta_data)
+print(matches)
+```
+
+Search multiple sequences in a fasta file and get their coordinates
+```{r}
+# Load the sequences into a DNAStringSet object
+dna_sequences <- readDNAStringSet("multiple_sequences.fasta", format = "fasta")
+
+# Search for specific sequences and store results with NCBI IDs
+search_sequences <- c("ACT", "TCGTT")  # Add as many motifs of interest 
+results <- list()
+
+for (search_sequence in search_sequences) {
+  matches <- vmatchPattern(DNAString(search_sequence), dna_sequences)
+  
+  # Extract NCBI IDs of matching sequences
+  full_names <- names(dna_sequences)[lengths(matches) > 0]
+  matching_ids <- sapply(strsplit(full_names, " "), `[`, 1)
+  
+  # Extract start and stop coordinates
+  start_coords <- lapply(matches[lengths(matches) > 0], start)
+  end_coords <- lapply(matches[lengths(matches) > 0], end)
+  
+  # Store the result
+  result <- data.frame(
+    NCBI_ID = rep(matching_ids, lengths(matches[lengths(matches) > 0])),
+    Start = unlist(start_coords),
+    End = unlist(end_coords),
+    Sequence_Match = search_sequence
+  )
+  
+  results[[search_sequence]] <- result
+  
+  # Print the results
+  cat("Results for sequence:", search_sequence, "\n")
+  print(result)
+}
+
+# Combine all results into a single data frame
+combined_results <- do.call(rbind, results)
+
+# Print the final combined results
+cat("Combined Results:\n")
+print(combined_results)
+
+# Save the combined results to a CSV file
+csv_file <- "sequence_matches.csv"
+write.csv(combined_results, file = csv_file, row.names = FALSE)
+
+cat("Results saved to:", csv_file, "\n")
+```
+
+Extract and Isolate Sequences
+Extract specific sequences
+```{r}
+# Extract a specific sequence by index
+specific_sequence <- dna_sequences[[1]] #  extract elements from a list
+cat("Specific sequence:\n", as.character(specific_sequence), "\n") # DNAString object to a character string
+cat("Number of nucleotides in specific sequence:", nchar(as.character(specific_sequence)), "\n")
+```
+
+Isolate Sequences
+```{r}
+dummy_fasta <- "
+>seq1
+TGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGAC
+>seq2
+ATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGAC
+>seq3
+ATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGAC
+>seq4
+TGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGACGATGCGTACGTAGCTAGCTAGCTAGCTAGCTGACTGACTGACTGAC"
+writeLines(dummy_fasta, con = "dummy_sequences.fasta")
+# 44, 88, 132, 176 sequence lengths
+
+# Load the dummy sequences into a DNAStringSet object
+dna_sequences <- readDNAStringSet("dummy_sequences.fasta", format = "fasta")
+
+# Isolate sequences longer than a specified length (e.g., 100 bp)
+long_sequences <- dna_sequences[width(dna_sequences) > 100]
+cat("Long sequences (more than 100 bp):\n")
+for (i in seq_along(long_sequences)) {
+  cat("Sequence", i, ":\n", as.character(long_sequences[[i]]), "\n")
+  cat("Number of nucleotides:", nchar(as.character(long_sequences[[i]])), "\n")
+}
+```
+
+Save Manipulated FASTA File
+Save the extracted or manipulated sequences to a new FASTA file.
+```{r}
+# Save the long sequences to a new FASTA file
+writeXStringSet(long_sequences, filepath = "long_sequences.fasta")
+```
+
+Load and Read a Real Dataset: Human Mitochondrial DNA (mtDNA)
+```{r}
+# Download the human mitochondrial DNA (mtDNA) FASTA file from NCBI
+ncbi_id <- "NC_012920"  # Human mitochondrial DNA
+fasta_data <- entrez_fetch(db="nuccore", id=ncbi_id, rettype="fasta")
+write(fasta_data, file = "human_mtDNA.fasta")
+
+# Read the mtDNA FASTA file
+mtDNA <- readDNAStringSet("human_mtDNA.fasta")
+print(mtDNA)
+```
+
+AT and GC Content Analysis
+Calculate the AT and GC content of the mtDNA sequences.
+```{r}
+# Calculate GC and AT content
+gc_content <- letterFrequency(mtDNA, letters = c("G", "C"), as.prob = TRUE)
+at_content <- letterFrequency(mtDNA, letters = c("A", "T"), as.prob = TRUE)
+
+# Combine GC and AT content into one data frame
+content_df <- as.data.frame(cbind(gc_content, at_content))
+colnames(content_df) <- c("G", "C", "A", "T")
+
+# Add GC_Content and AT_Content columns
+content_df <- content_df %>%
+  rownames_to_column("Sequence") %>%
+  mutate(GC_Content = G + C, AT_Content = A + T)
+
+# Print the content data frame
+print(content_df)
+```
+
+Nucleotide Content Analysis
+Calculate the nucleotide content of the mtDNA sequences.
+```{r}
+# Reshape the data for plotting proportions of A, T, G, and C
+nucleotide_df <- content_df %>%
+  dplyr::select(Sequence, G, C, A, T) %>%
+  pivot_longer(cols = c(G, C, A, T), names_to = "Nucleotide", values_to = "Proportion")
+
+# Visualize proportions of A, T, G, and C
+ggplot(nucleotide_df, aes(x = Sequence, y = Proportion, fill = Nucleotide)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle("Nucleotide Proportions of mtDNA Sequences") +
+  xlab("Sequence Index") +
+  ylab("Proportion (%)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("A" = "green", "T" = "yellow", "G" = "blue", "C" = "red"))
+```
+
+Find a Motif
+Search for a specific motif within the mtDNA sequences.
+```{r}
+# Search for a motif
+motif <- "ATG"
+motif_matches <- vmatchPattern(motif, mtDNA)
+print(motif_matches)
+
+motif <- "ATTGCG"
+motif_matches <- vmatchPattern(motif, mtDNA)
+print(motif_matches)
+```
+
+Additional Analysis and Visualization
+
+Nucleotide Frequency
+Calculate the frequency of each nucleotide in the sequences.
+```{r}
+# Calculate nucleotide frequency
+nucleotide_freq <- alphabetFrequency(mtDNA)
+print(nucleotide_freq)
+```
+
+Sequence Composition
+Visualize the composition of sequences in terms of nucleotide percentages.
+```{r}
+# Calculate nucleotide composition
+composition <- letterFrequency(mtDNA, letters = c("A", "T", "G", "C"), as.prob = TRUE)
+composition_df <- as.data.frame(composition)
+composition_df <- composition_df %>% 
+  rownames_to_column("Sequence") %>% 
+  pivot_longer(cols = -Sequence, names_to = "Nucleotide", values_to = "Percentage")
+
+# Visualize nucleotide composition
+ggplot(composition_df, aes(x = Sequence, y = Percentage, fill = Nucleotide)) +
+  geom_bar(stat = "identity", position = "fill") +
+  ggtitle("Nucleotide Composition in mtDNA Sequences") +
+  xlab("Sequence Index") +
+  ylab("Percentage") +
+  theme_minimal()
+```
+
+Sequence Pattern Matching
+Identify and visualize the occurrence of a specific pattern within the sequences.
+```{r}
+# Identify pattern matches
+pattern <- "TTG"
+pattern_matches <- vmatchPattern(pattern, mtDNA)
+print(pattern_matches)
+
+# Visualize pattern matches
+pattern_count <- sapply(pattern_matches, length)
+pattern_count_df <- data.frame(Sequence = names(pattern_count), Count = pattern_count)
+
+ggplot(pattern_count_df, aes(x = Sequence, y = Count, fill = Sequence)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Pattern 'TTG' Occurrences in mtDNA Sequences") +
+  xlab("Sequence Index") +
+  ylab("Pattern Count") +
+  theme_minimal()
+```
+```{r}
+# Define patterns to search for
+patterns <- c("TTG", "GAC", "CTG")
+
+# Initialize a list to store pattern counts
+pattern_counts_list <- list()
+
+# Identify pattern matches and count occurrences
+for (pattern in patterns) {
+  pattern_matches <- vmatchPattern(pattern, mtDNA)
+  pattern_count <- sapply(pattern_matches, length)
+  pattern_counts_list[[pattern]] <- pattern_count
+}
+
+# Combine pattern counts into a single data frame
+pattern_count_df <- do.call(rbind, lapply(names(pattern_counts_list), function(pattern) {
+  data.frame(Sequence = names(pattern_counts_list[[pattern]]), Count = pattern_counts_list[[pattern]], Pattern = pattern)
+}))
+
+# Convert Sequence to a factor to maintain order in the plot
+pattern_count_df$Sequence <- factor(pattern_count_df$Sequence, levels = names(pattern_count))
+
+# Visualize pattern matches
+ggplot(pattern_count_df, aes(x = Sequence, y = Count, fill = Pattern)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  ggtitle("Pattern Occurrences in mtDNA Sequences") +
+  xlab("Sequence Index") +
+  ylab("Pattern Count") +
+  theme_minimal()
+```
+
+----------------------------------------- Exercise -----------------------------------------
+
+Dr. Chris is investigating genetic markers in mitochondrial DNA. He needs your help to analyze the mtDNA data and identify specific patterns.
+
+a. GC Content Calculation
+Dr. Chris wants to analyze the GC content across different sequences. Calculate the GC content for each sequence in the mtDNA dataset. Identify sequences with unusually high or low GC content.
+
+```{r}
+# Solution a
+
+
+
+
+# Hint: Look for sequences with GC content significantly different from the average, indicating potential areas of interest.
+```
+
+b. Motif Search
+Dr. Chris suspects that a specific motif is prevalent in the mtDNA sequences. Search for the motif "ATG" and identify its locations within the sequences.
+```{r}
+# Solution b
+
+
+
+
+# Hint: Notice any sequences with a high frequency of the motif, indicating regions of interest.
+```
+
+c. Calculate AT/GC Ratios and Nucleotide Composition
+
+Dr. Chris wants to compare AT and GC content ratios and visualize the nucleotide composition. Calculate the AT/GC ratios for each sequence in the mtDNA dataset and create a stacked bar plot to show the AT/GC content percentages. Also, create individual bar plots for each nucleotide.
+```{r}
+# Solution c
+
+
+
+
+# Hint: Use dplyr::select to avoid conflicts with other packages and ensure correct column selection. Calculate nucleotide percentages for plotting by dividing each nucleotide count by the total count.
+```
+
+
+d. Identify Palindromic Sequences
+Dr. Chris is interested in palindromic sequences within the mtDNA. Identify and list all palindromic sequences.
+Dummy data
+```{r}
+# Create a dummy DNAStringSet with known palindromic and non-palindromic sequences
+dummy_sequences <- DNAStringSet(c(
+  "ATGCAT",         # Palindromic sequence
+  "CGTAGCTACG",     # Palindromic sequence
+  "AGCTCGTCA",      # Non-palindromic sequence
+  "AATTCCGGAATT",   # Palindromic sequence
+  "GATTACA"         # Non-palindromic sequence
+))
+```
+
+```{r}
+# Solution d
+
+
+
+# Hint: Palindromic sequences read the same forwards and backwards when considering the reverse complement. Use reverseComplement to check for palindromic sequences in the dataset.
+```
+
