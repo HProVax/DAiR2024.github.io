@@ -1,0 +1,531 @@
+---
+title: "Bioinformatics Workshop: Sequence Alignment and Phylogenetic Analysis in R"
+date: '2024-07-18'
+---
+Introduction to Sequence Alignment and Phylogenetic Analysis
+Objective:
+
+- Introduce bioinformatics techniques for sequence alignment and phylogenetic analysis using R
+- Explore scoring matrices, local and global alignment, gap penalties, and multiple sequence alignment
+- Perform phylogenetic analysis and understand tree construction methods
+- Use visualization techniques to understand sequence alignments and phylogenetic trees
+
+Load necessary libraries
+```{r}
+# Function to check and install packages
+check_and_install <- function(packages) {
+    for (pkg in packages) {
+        if (!requireNamespace(pkg, quietly = TRUE)) {
+            install.packages(pkg)
+        }
+    }
+}
+
+# BiocManager packages
+bioc_packages <- c("Biostrings", "msa", "ape", "phangorn")
+
+# CRAN packages
+cran_packages <- c("seqinr", "ggplot2", "dplyr", "rentrez", "tibble", "tidyr")
+
+# Check and install BiocManager packages
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install(bioc_packages, update = FALSE, ask = FALSE)
+
+# Check and install CRAN packages
+check_and_install(cran_packages)
+
+# Load the required libraries
+library(Biostrings)
+library(msa)
+library(ape)
+library(phangorn)
+library(seqinr)
+library(ggplot2)
+library(dplyr)
+library(rentrez)
+library(tibble)
+library(tidyr)
+```
+
+--------------------------
+Part 1: Sequence Alignment
+--------------------------
+
+Scoring Matrices in Sequence Alignment
+Introduction to Scoring Matrices (e.g., PAM, BLOSUM)
+
+Scoring matrices are used to score alignments between amino acid sequences. 
+Commonly used matrices include PAM (Point Accepted Mutation) and BLOSUM (BLOcks SUbstitution Matrix).
+They are standardized matrices widely used in bioinformatics for sequence alignment
+```{r}
+# Example of loading BLOSUM62 matrix
+# BLOSUM62 matrix designed to score alignments of proteins with about 62% sequence identity.
+data(BLOSUM62)
+print(BLOSUM62)
+```
+
+```{r}
+# Example of loading PAM250 matrix
+# designed for sequences with about 250 accepted point mutations per 100 amino acids.
+data(PAM250)
+print(PAM250)
+```
+
+Impact of Different Matrices on Alignment Outcomes
+
+```{r}
+# Load example sequences
+seq1 <- AAString("HEAGAWGHEE")
+seq2 <- AAString("PAWHEAE")
+
+# Perform pairwise alignment using different matrices
+alignment_BLOSUM62 <- pairwiseAlignment(seq1, seq2, substitutionMatrix = "BLOSUM62")
+alignment_PAM30 <- pairwiseAlignment(seq1, seq2, substitutionMatrix = "PAM30")
+
+print(alignment_BLOSUM62)
+print(alignment_PAM30)
+```
+
+Local vs. Global Alignment
+
+Differences Between Local and Global Alignment
+
+**Local Alignment**: Local alignment finds the best matching subsequence
+                     Useful for finding regions of similarity within long sequences.
+                     Smith-Waterman (Local)
+**Global Alignment**: Global alignment aligns the entire sequence
+                      Useful for comparing sequences that are expected to be similar over their entire length.
+                      Needleman-Wunsch (Global)
+
+```{r}
+# Perform local alignment using Smith-Waterman algorithm
+local_alignment <- pairwiseAlignment(seq1, seq2, type = "local")
+print(local_alignment)
+
+# Perform global alignment using Needleman-Wunsch algorithm
+global_alignment <- pairwiseAlignment(seq1, seq2, type = "global")
+print(global_alignment)
+```
+
+Gap Penalties
+
+- **Linear**: Each gap is penalized equally.
+- **Affine**: Initial gap opening is penalized more heavily than extending an existing gap.
+
+Impact of Gap Penalties on Global Alignment
+```{r}
+# Perform global alignment with different gap penalties
+alignment_linear_gap <- pairwiseAlignment(seq1, seq2, type = "global", gapOpening = 10, gapExtension = 1)
+alignment_affine_gap <- pairwiseAlignment(seq1, seq2, type = "global", gapOpening = 10, gapExtension = 0.5)
+
+print(alignment_linear_gap)
+print(alignment_affine_gap)
+```
+
+Aligning actual SARS Coronavirus Tor2 (NC_004718) vs. SARS-CoV-2 (NC_045512) 
+and saving the results in a text file 
+```{r}
+# Define the function to fetch and save sequences
+fetch_and_save_sequence <- function(id, filename) {
+  sequence <- entrez_fetch(db = "nucleotide", id = id, rettype = "fasta", retmode = "text")
+  write(sequence, file = filename)
+  cat(paste("Sequence fetched and saved to", filename, "\n"))
+}
+
+# Fetch and save the sequences for SARS-CoV Tor2 (NC_004718.3)
+fetch_and_save_sequence("NC_004718.3", "SARS_CoV_Tor2_1.fasta")
+fetch_and_save_sequence("NC_045512.2", "SARS_CoV_2_Wuhan.fasta")
+
+# Read the sequences from the files
+seq1 <- readDNAStringSet("SARS_CoV_Tor2_1.fasta")
+seq2 <- readDNAStringSet("SARS_CoV_2_Wuhan.fasta")
+
+# Perform global alignment using the Needleman-Wunsch algorithm
+global_alignment <- pairwiseAlignment(seq1, seq2, type="global")
+
+# Perform local alignment using the Smith-Waterman algorithm
+local_alignment <- pairwiseAlignment(seq1, seq2, type="local")
+
+# Print the results
+print("Global Alignment:")
+print(global_alignment)
+# Calculate percentage identity
+pid(global_alignment)
+
+print("Local Alignment:")
+print(local_alignment)
+
+# Optionally, save the alignments to files
+writePairwiseAlignments(global_alignment, file="global_alignment.txt")
+writePairwiseAlignments(local_alignment, file="local_alignment.txt")
+```
+
+
+Multiple Sequence Alignment Algorithms: 
+
+- ClustalW is a widely-used multiple sequence alignment tool known for its simplicity and effectiveness, providing hierarchical clustering and phylogenetic tree construction.
+
+- MUSCLE (Multiple Sequence Comparison by Log-Expectation) offers more accurate alignments, especially for large datasets, and is faster than ClustalW due to its iterative refinement technique.
+
+In summary, while ClustalW is easier to use and integrates well with phylogenetic analysis, MUSCLE is preferred for its speed and accuracy in aligning larger and more complex datasets.
+
+```{r}
+# Load example sequences
+sequences <- DNAStringSet(c("ATGCTAGCTAG", "ATGCTAGCTAA", "ATGCTAGATAG"))
+
+# Perform multiple sequence alignment using ClustalW
+msa_clustal <- msa(sequences, method = "ClustalW")
+print(msa_clustal)
+```
+
+```{r}
+# Perform multiple sequence alignment using MUSCLE
+msa_muscle <- msa(sequences, method = "Muscle")
+
+# Print the alignment result
+print(msa_muscle)
+```
+
+Perform MSA Using ClustalW with Three Sequences:SARS-CoV Tor2, SARS-CoV-2 Wuhan, and MERS-CoV
+```{r}
+# Fetch and save the sequences for MERS-CoV (NC_019843.3)
+fetch_and_save_sequence("NC_019843.3", "MERS_CoV.fasta")
+
+# Read the sequences from the files
+seq1 <- readDNAStringSet("SARS_CoV_Tor2_1.fasta")
+seq2 <- readDNAStringSet("SARS_CoV_2_Wuhan.fasta")
+seq3 <- readDNAStringSet("MERS_CoV.fasta")
+
+# Combine the sequences into one object
+sequences <- c(seq1, seq2, seq3)
+
+# Perform multiple sequence alignment using ClustalW
+msa_clustal <- msa(sequences, method = "ClustalW")
+
+# Print the alignment result
+print(msa_clustal)
+
+# Save the ClustalW alignment to a text file
+writeXStringSet(as(msa_clustal, "DNAStringSet"), filepath = "msa_clustal_output.txt")
+
+# Perform multiple sequence alignment using MUSCLE
+msa_muscle <- msa(sequences, method = "Muscle")
+
+# Print the alignment result
+print(msa_muscle)
+
+# Save the MUSCLE alignment to a text file
+writeXStringSet(as(msa_muscle, "DNAStringSet"), filepath = "msa_muscle_output.txt")
+```
+
+-----------------------------
+Part 2: Phylogenetic Analysis
+-----------------------------
+
+Phylogenetic Tree Construction Methods
+
+1. Distance-Based Methods (e.g., Neighbor-Joining, UPGMA)
+
+Neighbor-Joining (NJ) is a distance-based method for phylogenetic tree construction that is particularly effective for large datasets and accommodates varying rates of evolution across lineages, aiming to minimize the total branch length of the tree.
+
+UPGMA (Unweighted Pair Group Method with Arithmetic Mean) is a simpler, hierarchical clustering method that assumes a constant rate of evolution (molecular clock) across all lineages, which can lead to inaccuracies if the rate of evolution varies among lineages.
+
+In summary, NJ is preferred for its flexibility and accuracy with varying evolutionary rates, while UPGMA is straightforward but relies on the molecular clock assumption, making it less accurate under varying rates of evolution.
+
+```{r}
+# Generate a dummy DNA sequence dataset
+sequences <- DNAStringSet(c(
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGCTG",  # Japanese Pufferfish
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGCTC",  # Green-spotted Pufferfish
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGGTA",  # Zebrafish
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGGTC",  # Frog
+  "ATGCTAGCTAGCTAGCTAGCTAGGTT",      # Chicken
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGCGG",  # Human
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGCGG",  # Chimpanzee
+  "ATGCTAGCTAGCTAGCTAGCTAGCTAGCTC",  # Cattle
+  "ATGCTAGCTAGCTAGCTAGCTAGTTA",      # Rats
+  "ATGCTAGCTAGCTAGCTAGCTAGTTT"       # Mice
+))
+
+# Perform multiple sequence alignment
+alignment <- msa(sequences)
+
+# Convert alignment to distance matrix
+dist_matrix <- dist.ml(as.phyDat(alignment))
+
+# Construct phylogenetic trees using Neighbor-Joining and UPGMA methods
+tree_nj <- nj(dist_matrix)
+tree_upgma <- upgma(dist_matrix)
+
+# Set species names
+species_names <- c("Japanese Pufferfish", "Green-spotted Pufferfish",
+                   "Zebrafish", "Frog", "Chicken", "Human",
+                   "Chimpanzee", "Cattle", "Rats", "Mice")
+
+# Assign species names to trees
+tree_nj$tip.label <- species_names
+tree_upgma$tip.label <- species_names
+
+# Plot the Neighbor-Joining tree
+plot(tree_nj, main = "Neighbor-Joining Tree", cex=1.2)
+
+# Plot the UPGMA tree
+plot(tree_upgma, main = "UPGMA Tree", cex=1.2)
+
+```
+
+```{r}
+# Function to fetch sequences from GenBank using Biostrings
+fetch_sequence <- function(accession) {
+  res <- entrez_fetch(db = "nuccore", id = accession, rettype = "fasta")
+  dna_seq <- readDNAStringSet(textConnection(res))
+  return(dna_seq)
+}
+
+# Accession numbers for example sequences from GenBank
+accessions <- c(
+  "NC_006853",  # Cattle
+  "NC_001323",  # Chicken
+  "NC_001644",  # Chimpanzee
+  "NC_000845",  # Zebrafish
+  "NC_004421",  # Frog
+  "NC_006133",  # Green spotted puffer
+  "NC_001648",  # Human
+  "NC_006305",  # Japanese pufferfish
+  "NC_005089",  # Rat
+  "NC_005089"   # Mouse
+)
+
+# File names of the downloaded FASTA files
+filenames <- c(
+  "cattle.fasta",
+  "chicken.fasta",
+  "chimpanzee.fasta",
+  "zebrafish.fasta",
+  "frog.fasta",
+  "green_spotted_puffer.fasta",
+  "human.fasta",
+  "japanese_pufferfish.fasta",
+  "rat.fasta",
+  "mouse.fasta"
+)
+
+# Function to read and truncate sequences to 50bp
+read_and_truncate_sequence <- function(filename) {
+  seq <- readDNAStringSet(filepath = filename)
+  subseq(seq, start = 1, end = 50)
+}
+
+# Read and truncate sequences
+sequences <- lapply(filenames, read_and_truncate_sequence)
+sequences <- do.call(c, sequences)
+
+# Perform multiple sequence alignment
+alignment <- msa(sequences)
+
+# Convert alignment to phyDat object
+phy_data <- as.phyDat(alignment, type = "DNA")
+
+# Convert alignment to distance matrix
+dist_matrix <- dist.ml(phy_data)
+
+# Construct phylogenetic trees using Neighbor-Joining and UPGMA methods
+tree_nj <- nj(dist_matrix)
+tree_upgma <- upgma(dist_matrix)
+
+# Set species names
+species_names <- c("Cattle", "Chicken", "Chimpanzee", "Zebrafish", "Frog", 
+                   "Green-spotted Pufferfish", "Human", "Japanese Pufferfish", "Rat", "Mouse")
+
+# Assign species names to trees
+tree_nj$tip.label <- species_names
+tree_upgma$tip.label <- species_names
+
+# Plot the Neighbor-Joining tree
+par(mfrow = c(1, 1))  # Set up plotting area for one plot
+plot(tree_nj, main = "Neighbor-Joining Tree", cex=1.2)
+
+# Plot the UPGMA tree
+plot(tree_upgma, main = "UPGMA Tree", cex=1.2)
+```
+
+2. Character-Based Methods (e.g., Maximum Parsimony, Maximum Likelihood, Bayesian Inference)
+
+```{r}
+# Load dummy sequences
+sequences <- DNAStringSet(c("ATGCTAGCTAG", "ATGCTAGCTAA", "ATGCTAGATAG"))
+
+# Perform multiple sequence alignment
+alignment <- msa(sequences)
+
+# Convert alignment to phyDat object
+phy_data <- as.phyDat(alignment, type = "DNA")
+
+# Check the phyDat object
+print(phy_data)
+
+# Maximum Parsimony Tree
+tryCatch({
+  mp_tree <- pratchet(phy_data)
+  plot(mp_tree, main = "Maximum Parsimony Tree")
+}, error = function(e) {
+  cat("Error in Maximum Parsimony Tree construction:", conditionMessage(e), "\n")
+})
+
+# Maximum Likelihood Tree
+dist_matrix <- dist.ml(phy_data)  # Compute distance matrix
+
+# Make sure the labels are consistent
+tree_labels <- attr(dist_matrix, "Labels")
+starting_tree <- nj(dist_matrix)
+starting_tree$tip.label <- tree_labels
+
+ml_fit <- pml(starting_tree, phy_data)  # Create a PML object
+ml_fit <- optim.pml(ml_fit, optNni = TRUE)  # Optimize tree
+plot(ml_fit$tree, main = "Maximum Likelihood Tree")
+
+# Bootstrap replicates for a Bayesian-like approach
+bs_tree <- bootstrap.pml(ml_fit, bs = 100)  # Perform bootstrap
+plotBS(midpoint(ml_fit$tree), bs_tree, main = "Bayesian-like (Bootstrap) Tree")
+
+# Bootstrapping assesses the reliability of phylogenetic trees by resampling data
+```
+
+```{r}
+# Function to fetch sequences from GenBank and save them to a file
+fetch_and_save_sequence <- function(accession, filename) {
+  res <- entrez_fetch(db = "nuccore", id = accession, rettype = "fasta")
+  write(res, file = filename)
+}
+
+# Accession numbers for example COVID-19 strains from GenBank
+accessions <- c(
+  "MT020881",  # SARS-CoV-2 strain 1
+  "MT020882",  # SARS-CoV-2 strain 2
+  "MT020883",  # SARS-CoV-2 strain 3
+  "MT020884",  # SARS-CoV-2 strain 4
+  "MT020885",  # SARS-CoV-2 strain 5
+  "MT020886"   # SARS-CoV-2 strain 6
+)
+
+# Corresponding file names
+filenames <- c(
+  "covid_strain_1.fasta",
+  "covid_strain_2.fasta",
+  "covid_strain_3.fasta",
+  "covid_strain_4.fasta",
+  "covid_strain_5.fasta",
+  "covid_strain_6.fasta"
+)
+
+# Fetch and save each sequence
+mapply(fetch_and_save_sequence, accessions, filenames)
+
+# Function to read and truncate sequences to 15bp
+read_and_truncate_sequence <- function(filename) {
+  seq <- readDNAStringSet(filepath = filename)
+  subseq(seq, start = 1, end = 15)
+}
+
+# Read and truncate sequences
+sequences <- lapply(filenames, read_and_truncate_sequence)
+sequences <- do.call(c, sequences)
+
+# Perform multiple sequence alignment
+alignment <- msa(sequences)
+
+# Convert alignment to phyDat object
+phy_data <- as.phyDat(alignment, type = "DNA")
+
+# Check the phyDat object
+print(phy_data)
+
+# Maximum Parsimony Tree
+tryCatch({
+  mp_tree <- pratchet(phy_data)
+  plot(mp_tree, main = "Maximum Parsimony Tree")
+}, error = function(e) {
+  cat("Error in Maximum Parsimony Tree construction:", conditionMessage(e), "\n")
+})
+
+# Maximum Likelihood Tree
+dist_matrix <- dist.ml(phy_data)  # Compute distance matrix
+
+# Make sure the labels are consistent
+tree_labels <- attr(dist_matrix, "Labels")
+starting_tree <- nj(dist_matrix)
+starting_tree$tip.label <- tree_labels
+
+ml_fit <- pml(starting_tree, phy_data)  # Create a PML object
+ml_fit <- optim.pml(ml_fit, optNni = TRUE)  # Optimize tree
+plot(ml_fit$tree, main = "Maximum Likelihood Tree")
+
+# Bootstrap replicates for a Bayesian-like approach
+bs_tree <- bootstrap.pml(ml_fit, bs = 100)  # Perform bootstrap
+plotBS(midpoint(ml_fit$tree), bs_tree, main = "Bayesian-like (Bootstrap) Tree")
+```
+
+Software Tools for Phylogenetic Analysis (e.g., MEGA, PhyML, BEAST, MrBayes)
+
+---------
+Exercises
+---------
+Question 1:
+Perform a local and global alignment between the sequences "MKTIIALSYIFCLVFA" and "MKTLLSYIFCLIVFAA" using the BLOSUM50 matrix. Compare the alignment scores and explain the differences.
+
+Solution 1:
+```{r}
+
+
+
+# Hint:Use pairwiseAlignment function with type = "local" and type = "global" for local and global alignments, respectively.
+```
+
+
+Question 2:
+Fetch and align the sequences for Human Influenza A virus (NC_026434) and Avian Influenza A virus (NC_007373) using global alignment. Calculate the percentage identity of the alignment.
+
+Solution 2:
+```{r}
+
+
+
+# Hint:Use entrez_fetch to fetch the sequences and pairwiseAlignment with type = "global" for global alignment.
+```
+
+
+Question 3:
+Perform multiple sequence alignment (MSA) using MUSCLE on the sequences "ATGCGTAC", "ATGCGGAC", and "ATGCGTGC". Save the alignment results to a text file.
+
+Solution 3:
+```{r}
+
+
+
+
+# Hint:Use msa function with method = "Muscle" for multiple sequence alignment.
+```
+
+
+Question 4:
+Construct a phylogenetic tree using the Neighbor-Joining method for the sequences "ATGCGTAC", "ATGCGGAC", and "ATGCGTGC". Plot the resulting tree.
+
+Solution 4:
+```{r}
+
+
+
+# Hint:Use nj function to construct the Neighbor-Joining tree and plot to visualize it.
+```
+
+
+Question 5:
+Compare the impact of linear and affine gap penalties on the global alignment of the sequences "GATTACA" and "GCATGCU". What are the alignment scores for each method?
+
+Solution 5:
+```{r}
+
+
+
+# Hint: Use pairwiseAlignment with different gapOpening and gapExtension parameters for linear and affine gap penalties.
+```
