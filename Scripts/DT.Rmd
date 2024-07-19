@@ -1,0 +1,97 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(rpart)
+```
+
+```{r}
+# Generate a sample dataset
+set.seed(123)
+n <- 100
+p <- 2
+X <- data.frame(matrix(rnorm(n * p), ncol = p))
+colnames(X) <- c("Feature1", "Feature2")
+y <- factor(sample(c('A', 'B'), n, replace = TRUE))
+data <- data.frame(X, Label = y)
+
+# Split data into training and test sets
+train_idx <- sample(1:n, size = round(0.7 * n), replace = FALSE)
+train_data <- data[train_idx, ]
+test_data <- data[-train_idx, ]
+
+# Create a decision tree model
+tree_model <- rpart(Label ~ ., data = train_data, method = "class")
+
+# Print the decision tree model
+print(tree_model)
+
+# Plot the decision tree
+plot(tree_model)
+text(tree_model, pretty = 0)
+
+# Predict on the test set
+y_pred <- predict(tree_model, test_data, type = "class")
+
+# Evaluate the performance
+confusion_matrix <- table(test_data$Label, y_pred)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / length(test_data$Label)
+print(paste("Accuracy:", round(accuracy, 2)))
+
+```
+```{r}
+# Load required package
+library(rpart)
+library(rattle)
+library(RColorBrewer)
+```
+
+```{r}
+# Generate a sample dataset
+set.seed(123)
+n <- 100
+p <- 2
+X <- data.frame(matrix(rnorm(n * p), ncol = p))
+colnames(X) <- c("Feature1", "Feature2")
+y <- factor(sample(c('A', 'B'), n, replace = TRUE))
+data <- data.frame(X, Label = y)
+```
+
+```{r}
+# Split data into training and test sets
+train_idx <- sample(1:n, size = round(0.7 * n), replace = FALSE)
+train_data <- data[train_idx, ]
+test_data <- data[-train_idx, ]
+```
+
+```{r}
+# Create a decision tree model
+tree_model <- rpart(Label ~ ., data = train_data, method = "class")
+
+# Print the decision tree model
+print(tree_model)
+
+# Plot the decision tree
+plot(tree_model)
+text(tree_model, pretty = 0)
+```
+
+```{r}
+# Predict on the test set
+y_pred <- predict(tree_model, test_data, type = "class")
+
+# Evaluate the performance
+confusion_matrix <- table(test_data$Label, y_pred)
+print(confusion_matrix)
+accuracy <- sum(diag(confusion_matrix)) / length(test_data$Label)
+print(paste("Accuracy:", round(accuracy, 2)))
+```
+```{r}
+library(rattle)
+library(RColorBrewer)
+fancyRpartPlot(tree_model, main="Fancy DT")
+```
+

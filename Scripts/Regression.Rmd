@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# Load the necessary library
+library(MASS)
+library(ggplot2)
+library(plotly)
+# Load a dataset
+data(mtcars)
+```
+
+
+```{r}
+# Fit a linear model
+model <- lm(mpg ~ wt + hp, data = mtcars)
+summary(model)
+# Summarize the model
+```
+
+
+```{r}
+# Plot the data and the fitted model
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  labs(title = "Linear Regression of MPG on Weight and Horsepower",
+       x = "Weight (1000 lbs)",
+       y = "Miles per Gallon (MPG)")
+
+```
+```{r}
+patientID = 1:1000
+myMean = c(47,160)
+myCov = matrix(c(40, 35, 35, 100), nrow=2)
+myData = mvrnorm(n=1000, mu=myMean, Sigma = myCov)
+colnames(myData) = c("patientAge", "patientWeight")
+patientResponse = 0.6*myData[,"patientAge"] - 0.2*myData[,"patientWeight"]+runif(1000, min=-1, max=5)
+patientData = data.frame(patientID, myData, patientResponse)
+summary(patientData)
+pairs(patientData)
+hist(patientResponse)
+myPlot = plot_ly(patientData, type="scatter3d", mode="markers",
+                 x=~patientAge, y=~patientWeight, z=~patientResponse, size=I(10))
+myPlot = myPlot %>% layout(title = 'Patient Response')
+myPlot
+
+```
+```{r}
+model2 = lm(patientResponse ~ patientAge + patientWeight, data = patientData)
+summary(model2)
+hist(model2$residual)
+myPlot %>%
+  add_trace(patientData,  x=~patientAge, y=~patientWeight, z=model2$fitted.values, type="mesh3d" )
+
+```
+
+```{r}
+patientData$patientResponse = 0.3*(myData[,"patientAge"]-47)^2 - 0.5*(myData[,"patientWeight"]-160)^2 + 45 + rnorm(1000, mean=0, sd=50)
+summary(patientData)
+pairs(patientData)
+myPlot = plot_ly(patientData, type="scatter3d", mode="markers",
+                 x=~patientAge, y=~patientWeight, z=~patientResponse, size=I(10))
+myPlot = myPlot %>% layout(title = 'Patient Response')
+myPlot
+
+```
+
+```{r}
+#Try a polynomial of first order in the predictors
+myGLM1 = glm(patientResponse ~ patientAge + patientWeight, data = patientData)
+summary(myGLM1)
+hist(myGLM1$residuals)
+#Can you a density plot instead
+#plot(density(myGLM$residuals))
+confint(myGLM1)
+plot(patientData$patientResponse, myGLM1$fitted.values)
+# myPlot %>% 
+  # add_trace(patientData,  x=~patientAge, y=~patientWeight, z=myGLM$fitted.values, type="mesh3d" ) 
+#Try a polynomial of first order in the predictors with the cross term
+
+```
+```{r}
+#Try a polynomial of second order in the predictors without the cross term
+myGLM3 = glm(patientResponse ~ I(patientAge^2) + I(patientWeight^2) + patientAge * patientWeight, data = patientData)
+summary(myGLM3)
+hist(myGLM3$residuals)
+
+```
+```{r}
+myPlot %>%
+  add_trace(patientData,  x=~patientAge, y=~patientWeight, z=myGLM3$fitted.values, type="mesh3d" )
+plot(patientData$patientResponse, myGLM3$fitted.values)
+#Generating data for predictions where we do not have the patient responses and would like to generate
+#them using our current model
+patientID = 1:500
+myMean = c(47,160)
+mySigma = matrix(c(40, 35, 35, 100), nrow=2)
+myData = mvrnorm(n=500, mu=myMean, Sigma = mySigma)
+colnames(myData) = c("patientAge", "patientWeight")
+newPatientData = data.frame(myData)
+newPatientResponse = predict(myGLM3, newdata = newPatientData)
+
+```
+
